@@ -4867,7 +4867,8 @@ body {
 /* Native Mobile Bottom Nav Bar */
 .mobile-bottom-nav {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
+  align-items: end;
   background: #090E1A;
   border-top: 1px solid var(--border-subtle);
   padding: 8px 4px;
@@ -5444,11 +5445,14 @@ input:checked + .slider-switch:before {
 
 /* Floating Action Button (FAB) */
 .fab-container {
-  position: absolute;
-  bottom: 22px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: none;
   z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .fab-btn-iqoo {
