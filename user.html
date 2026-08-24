@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ClariFi Edge Auditor | iQOO 15 Snapdragon NPU &mdash; Hybrid AI Finance Audit</title>
+  <meta name="description" content="Hybrid-Edge AI Auditor for iQOO City Battles 2026. Snap invoices, extract on Snapdragon NPU offline via ExecuTorch, verify with Triton AI, and get AI CFO strategic actions in real-time.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme mobile-portal-body">
+  <!-- Ambient Glows -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <!-- Desktop Preview Controls Bar -->
+  <div class="mobile-viewport-bar">
+    <div class="viewport-left">
+      <a href="index.html" class="nav-back-link"><i class="fa-solid fa-arrow-left"></i> Home</a>
+      <a href="admin.html" class="nav-back-link"><i class="fa-solid fa-gauge-high"></i> Admin Panel</a>
+      <a href="why-us.html" class="nav-back-link"><i class="fa-solid fa-circle-question"></i> 8 Pillars</a>
+    </div>
+    <div class="viewport-center">
+      <span class="device-pill"><i class="fa-solid fa-mobile-screen"></i> iQOO 15 &bull; Snapdragon NPU Edge Auditor</span>
+    </div>
+    <div class="viewport-right">
+      <button class="btn btn-xs btn-outline" id="toggleDeviceFrameBtn">
+        <i class="fa-solid fa-expand"></i> Toggle Frame
+      </button>
+      <button class="btn-theme-toggle" id="themeToggleBtn" aria-label="Toggle Theme" title="Switch Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <button class="btn-settings-nav openSettingsBtn" aria-label="Open Settings" title="Workspace Settings">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile App Frame Container -->
+  <div class="mobile-app-wrapper phone-frame-active" id="mobileAppWrapper">
+    <!-- iQOO 15 Device Mockup Frame -->
+    <div class="iphone-mockup-frame">
+      <div class="iphone-notch">
+        <div class="notch-speaker"></div>
+        <div class="notch-camera"></div>
+      </div>
+
+      <!-- Native Mobile App Screen -->
+      <div class="mobile-screen-content">
+        <!-- iQOO 15 Hardware Status Bar -->
+        <div class="iqoo-status-bar">
+          <div class="iqoo-status-left">
+            <span>iQOO 15</span>
+          </div>
+          <div class="iqoo-status-right">
+            <span class="npu-status-pill">
+              <span class="npu-pulse-dot"></span>
+              Snapdragon NPU
+            </span>
+            <span><i class="fa-solid fa-signal"></i></span>
+            <span><i class="fa-solid fa-battery-three-quarters"></i> 87%</span>
+          </div>
+        </div>
+
+        <!-- Mobile App Top Bar -->
+        <div class="mobile-header">
+          <div class="user-greeting">
+            <div class="avatar-mobile"><i class="fa-solid fa-user-tie"></i></div>
+            <div>
+              <div class="user-title">Aditya Siwach</div>
+              <div class="user-company">ClariFi Edge &bull; Chartered Accountant</div>
+            </div>
+          </div>
+          <div class="mobile-header-actions">
+            <button class="icon-btn-mobile" onclick="showToast('🔔 Invoice flagged: Acme Corp $50,000 duplicate detected', 'warning')">
+              <i class="fa-solid fa-bell"></i>
+              <span class="notif-dot"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Mobile App Body -->
+        <div class="mobile-body-scroll">
+
+          <!-- ===== SCREEN 1: AI CFO DASHBOARD (HOME) ===== -->
+          <div class="mobile-tab-view active" id="mobTabHome">
+
+            <!-- Cash Runway Radial Gauge -->
+            <div class="runway-gauge-card">
+              <div class="gauge-header">
+                <span><i class="fa-solid fa-chart-line"></i> Cash Runway</span>
+                <span class="gauge-badge" id="runwayBadge"><i class="fa-solid fa-circle-check"></i> Healthy</span>
+              </div>
+              <div class="gauge-container">
+                <svg class="gauge-svg" viewBox="0 0 220 120">
+                  <defs>
+                    <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" style="stop-color:#EF4444"/>
+                      <stop offset="40%" style="stop-color:#F59E0B"/>
+                      <stop offset="100%" style="stop-color:#10B981"/>
+                    </linearGradient>
+                  </defs>
+                  <!-- Background arc -->
+                  <path class="gauge-bg-arc" d="M 20 110 A 90 90 0 0 1 200 110" />
+                  <!-- Value arc -->
+                  <path class="gauge-value-arc" id="gaugeValueArc" d="M 20 110 A 90 90 0 0 1 200 110"
+                    stroke-dasharray="283"
+                    stroke-dashoffset="113" />
+                </svg>
+                <div class="gauge-center-text">
+                  <span class="gauge-months-val" id="gaugeMonthsVal">4.2</span>
+                  <span class="gauge-months-lbl">MONTHS RUNWAY</span>
+                </div>
+              </div>
+              <div class="gauge-labels-row">
+                <span>0 mo</span>
+                <span>3 mo</span>
+                <span>6 mo</span>
+                <span>12 mo</span>
+              </div>
+            </div>
+
+            <!-- CFO Metrics Row -->
+            <div class="cfo-metrics-row">
+              <div class="cfo-metric-card">
+                <div class="card-lbl"><i class="fa-solid fa-fire text-amber"></i> Burn Rate</div>
+                <div class="card-val">$120,000</div>
+                <div class="card-meta neg"><i class="fa-solid fa-arrow-up"></i> +8% vs last month</div>
+              </div>
+              <div class="cfo-metric-card">
+                <div class="card-lbl"><i class="fa-solid fa-file-invoice-dollar text-cyan"></i> Liabilities</div>
+                <div class="card-val">$65,400</div>
+                <div class="card-meta warn"><i class="fa-solid fa-clock"></i> Payroll in 6 days</div>
+              </div>
+            </div>
+
+            <!-- Continuous Audit Readiness -->
+            <div class="mobile-health-card">
+              <div class="health-header">
+                <span><i class="fa-solid fa-shield-halved text-emerald"></i> Continuous Audit Readiness</span>
+                <span class="live-pill"><span class="pulse-dot-green"></span> Live</span>
+              </div>
+              <div class="health-body">
+                <div class="score-circle">
+                  <span class="score-num font-mono">98%</span>
+                  <span class="score-lbl">AUDIT READY</span>
+                </div>
+                <div class="health-stats">
+                  <div class="stat-mini">
+                    <span class="val font-mono text-emerald">0.5 Days</span>
+                    <span class="lbl">Month-End Close</span>
+                  </div>
+                  <div class="stat-mini">
+                    <span class="val font-mono text-cyan">100%</span>
+                    <span class="lbl">Auto-Matched</span>
+                  </div>
+                </div>
+              </div>
+              <div class="health-footer">
+                <i class="fa-solid fa-circle-check text-emerald"></i> Big 4 SOX Package generated with zero material drift.
+              </div>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div class="mobile-quick-actions">
+              <button class="quick-act-btn" onclick="switchMobileTab('mobTabScan')">
+                <div class="q-icon cyan"><i class="fa-solid fa-camera"></i></div>
+                <span>Snap Invoice</span>
+              </button>
+              <button class="quick-act-btn" onclick="switchMobileTab('mobTabEvidence')">
+                <div class="q-icon amber"><i class="fa-solid fa-inbox"></i></div>
+                <span>Evidence Tasks (2)</span>
+              </button>
+              <button class="quick-act-btn" onclick="switchMobileTab('mobTabContracts')">
+                <div class="q-icon violet"><i class="fa-solid fa-code"></i></div>
+                <span>Data Contracts</span>
+              </button>
+            </div>
+
+            <!-- Recent Auto-Reconciled Feed -->
+            <div class="mobile-section-header">
+              <h6>Recent Auto-Reconciled</h6>
+              <span class="font-mono text-cyan text-xs">Today</span>
+            </div>
+
+            <div class="mobile-tx-list">
+              <div class="mobile-tx-item">
+                <div class="tx-ico"><i class="fa-brands fa-stripe"></i></div>
+                <div class="tx-details">
+                  <span class="tx-title">Stripe Payout Batch #88291</span>
+                  <span class="tx-sub">Auto-credited Cash 1010-00</span>
+                </div>
+                <div class="tx-amount positive font-mono">+$248,500.00</div>
+              </div>
+
+              <div class="mobile-tx-item">
+                <div class="tx-ico"><i class="fa-brands fa-aws"></i></div>
+                <div class="tx-details">
+                  <span class="tx-title">AWS Cloud Services</span>
+                  <span class="tx-sub">Amortized Hosting 6100-20</span>
+                </div>
+                <div class="tx-amount negative font-mono">-$42,118.40</div>
+              </div>
+
+              <div class="mobile-tx-item">
+                <div class="tx-ico"><i class="fa-solid fa-building"></i></div>
+                <div class="tx-details">
+                  <span class="tx-title">Datadog Enterprise ARR</span>
+                  <span class="tx-sub">Matched to PO #9910</span>
+                </div>
+                <div class="tx-amount negative font-mono">-$10,000.00</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== SCREEN 2: MULTI-MODAL INGESTION & AI SCANNER ===== -->
+          <div class="mobile-tab-view" id="mobTabScan">
+            <div class="camera-scanner-view">
+              <div class="scan-header-card">
+                <h5><i class="fa-solid fa-microchip text-cyan"></i> Edge AI Document Scanner</h5>
+                <p>Capture any invoice, receipt, or bill. ExecuTorch INT8 extracts data on-device via Snapdragon NPU &mdash; no cloud needed.</p>
+              </div>
+
+              <!-- Camera Viewfinder with HUD -->
+              <div class="camera-hud-box" id="cameraHudBox">
+                <div class="hud-corner tl"></div>
+                <div class="hud-corner tr"></div>
+                <div class="hud-corner bl"></div>
+                <div class="hud-corner br"></div>
+                <div class="hud-guide-text">Align document within frame</div>
+
+                <!-- Simulated Receipt in Viewfinder -->
+                <div class="sample-receipt-image">
+                  <div class="receipt-paper">
+                    <div class="rec-title" id="receiptVendorName">ACME SOFTWARE CORP</div>
+                    <div class="rec-row"><span>Invoice #:</span> <span id="receiptInvNum">INV-2026-4421</span></div>
+                    <div class="rec-row"><span>Date:</span> <span id="receiptDate">Aug 22, 2026</span></div>
+                    <div class="rec-row"><span>Software License:</span> <span id="receiptLineItem">$45,000.00</span></div>
+                    <div class="rec-row"><span>GST (18%):</span> <span id="receiptTax">$5,000.00</span></div>
+                    <div class="rec-divider"></div>
+                    <div class="rec-row bold"><span>TOTAL:</span> <span id="receiptTotal">$50,000.00</span></div>
+                  </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="hud-controls-bar">
+                  <button class="hud-tool-btn" title="Flash"><i class="fa-solid fa-bolt"></i></button>
+                  <button class="hud-shutter-btn" id="triggerEdgeScan" onclick="startEdgeProcessingFlow()">
+                    <div class="hud-shutter-inner"></div>
+                  </button>
+                  <button class="hud-tool-btn" title="Gallery"><i class="fa-solid fa-images"></i></button>
+                </div>
+              </div>
+
+              <!-- Quick Preset Invoices -->
+              <div class="preset-section-title">
+                <span><i class="fa-solid fa-flask"></i> Quick-Test Invoices</span>
+                <span class="font-mono text-xs">Hackathon Demo</span>
+              </div>
+              <div class="preset-invoices-list">
+                <div class="preset-invoice-item" onclick="loadPresetInvoice('acme')">
+                  <div class="preset-left">
+                    <span class="preset-tag danger">HIGH RISK</span>
+                    <div>
+                      <div class="preset-title">Acme Software Corp</div>
+                      <div class="preset-desc">Sunday posting &bull; +200% vendor avg drift</div>
+                    </div>
+                  </div>
+                  <div class="preset-amount">$50,000</div>
+                </div>
+                <div class="preset-invoice-item" onclick="loadPresetInvoice('datadog')">
+                  <div class="preset-left">
+                    <span class="preset-tag success">VERIFIED</span>
+                    <div>
+                      <div class="preset-title">Datadog SaaS License</div>
+                      <div class="preset-desc">Matches PO #9910 &bull; Net-30</div>
+                    </div>
+                  </div>
+                  <div class="preset-amount">$10,000</div>
+                </div>
+                <div class="preset-invoice-item" onclick="loadPresetInvoice('uber')">
+                  <div class="preset-left">
+                    <span class="preset-tag success">VERIFIED</span>
+                    <div>
+                      <div class="preset-title">Uber Business Trip</div>
+                      <div class="preset-desc">Airport ride SFO &bull; Travel expense</div>
+                    </div>
+                  </div>
+                  <div class="preset-amount">$77.40</div>
+                </div>
+                <div class="preset-invoice-item" onclick="loadPresetInvoice('cloudflare')">
+                  <div class="preset-left">
+                    <span class="preset-tag warning">DUPLICATE</span>
+                    <div>
+                      <div class="preset-title">CloudFlare Enterprise</div>
+                      <div class="preset-desc">Potential duplicate of INV-4398</div>
+                    </div>
+                  </div>
+                  <div class="preset-amount">$15,000</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== SCREEN 3: EDGE NPU PROCESSING STATE ===== -->
+          <div class="mobile-tab-view" id="mobTabProcessing">
+            <div class="edge-processing-card">
+              <div class="edge-badge-top" id="edgeBadgeTop">
+                <span>⚡ Processing on Snapdragon NPU (Offline)</span>
+                <span class="edge-timer-chip" id="edgeTimerChip">0ms</span>
+              </div>
+
+              <!-- Document being scanned with laser -->
+              <div class="camera-hud-box" style="height: 180px;">
+                <div class="holo-scan-laser" id="holoScanLaser"></div>
+                <div class="sample-receipt-image" style="transform: scale(0.8);">
+                  <div class="receipt-paper">
+                    <div class="rec-title" id="processingVendor">ACME SOFTWARE CORP</div>
+                    <div class="rec-row"><span>Invoice #:</span> <span>INV-2026-4421</span></div>
+                    <div class="rec-row"><span>Date:</span> <span>Aug 22, 2026</span></div>
+                    <div class="rec-row bold"><span>TOTAL:</span> <span id="processingTotal">$50,000.00</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Telemetry Stages -->
+              <div class="edge-telemetry-box">
+                <div class="telemetry-row active" id="telRow1">
+                  <span class="telemetry-icon"><i class="fa-solid fa-spinner fa-spin"></i></span>
+                  <span>Initializing ExecuTorch Runtime...</span>
+                </div>
+                <div class="telemetry-row" id="telRow2">
+                  <span class="telemetry-icon"><i class="fa-solid fa-circle"></i></span>
+                  <span>Loading INT8 Vision Transformer on Hexagon NPU...</span>
+                </div>
+                <div class="telemetry-row" id="telRow3">
+                  <span class="telemetry-icon"><i class="fa-solid fa-circle"></i></span>
+                  <span>Extracting tables & key-value pairs...</span>
+                </div>
+                <div class="telemetry-row" id="telRow4">
+                  <span class="telemetry-icon"><i class="fa-solid fa-circle"></i></span>
+                  <span>Structuring JSON payload on-device...</span>
+                </div>
+                <div class="telemetry-row" id="telRow5">
+                  <span class="telemetry-icon"><i class="fa-solid fa-circle"></i></span>
+                  <span>Connecting to Secure Triton Server...</span>
+                </div>
+              </div>
+
+              <!-- Progress Bar -->
+              <div style="background: rgba(255,255,255,0.06); border-radius: 8px; height: 6px; overflow: hidden;">
+                <div id="edgeProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #00F0FF, #3B82F6); border-radius: 8px; transition: width 0.4s ease;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== SCREEN 4: VERIFICATION & ANOMALY DETECTION ===== -->
+          <div class="mobile-tab-view" id="mobTabResults">
+            <div class="verification-results-container">
+              <!-- Extracted Data Table -->
+              <div class="extracted-data-card">
+                <div class="gauge-header" style="margin-bottom: 0;">
+                  <span><i class="fa-solid fa-table-list text-cyan"></i> Extracted Data (On-Device)</span>
+                  <span class="badge-status-pass" style="font-size: 0.68rem;"><i class="fa-solid fa-check"></i> 99.7%</span>
+                </div>
+                <table class="data-table-compact">
+                  <tr><td>Document Type</td><td id="resDocType">Tax Invoice</td></tr>
+                  <tr><td>Vendor Name</td><td id="resVendor">Acme Software Corp</td></tr>
+                  <tr><td>Invoice Date</td><td id="resDate"><span class="highlight-anomaly">Aug 22, 2026 (Sun)</span></td></tr>
+                  <tr><td>Line Items Total</td><td id="resSubtotal">$45,000.00</td></tr>
+                  <tr><td>Tax Amount (GST)</td><td id="resTax">$5,000.00</td></tr>
+                  <tr><td>Gross Total</td><td id="resTotal">$50,000.00</td></tr>
+                  <tr><td>Device ID</td><td>iQOO_15_Hackathon</td></tr>
+                  <tr><td>Extraction Latency</td><td id="resLatency">240ms (NPU)</td></tr>
+                </table>
+              </div>
+
+              <!-- Risk Score Card -->
+              <div class="risk-score-card" id="riskScoreCard">
+                <div class="risk-header-row">
+                  <div class="risk-score-badge">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>JET Risk Score: <span id="riskScoreVal">85</span>/100</span>
+                  </div>
+                  <span class="risk-level-tag" id="riskLevelTag">HIGH RISK</span>
+                </div>
+
+                <!-- XAI Accordion -->
+                <div class="xai-accordion">
+                  <button class="xai-toggle-btn" onclick="toggleXaiAccordion()">
+                    <span><i class="fa-solid fa-brain"></i> Why was this flagged? (XAI)</span>
+                    <i class="fa-solid fa-chevron-down" id="xaiChevron"></i>
+                  </button>
+                  <div class="xai-content-body" id="xaiContentBody" style="display: none;">
+                    <p id="xaiReasonText">Invoice date falls on a <strong>Sunday (Aug 22, 2026)</strong>. Vendor amount of $50,000 is exactly <strong>200% higher</strong> than the historical average for Acme Corp ($25,000 avg over 12 months). Pattern consistent with <strong>potential duplicate or inflated billing</strong>.</p>
+                    <div class="jet-flags-list">
+                      <span class="jet-flag-pill">WEEKEND_POSTING</span>
+                      <span class="jet-flag-pill">AMOUNT_DRIFT_200%</span>
+                      <span class="jet-flag-pill">NO_PO_MATCH</span>
+                      <span class="jet-flag-pill">FIRST_TIME_AMOUNT</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Proceed to CFO Strategy Button -->
+              <button class="btn-cfo-action primary" onclick="switchMobileTab('mobTabCfo')" id="proceedToCfoBtn">
+                <i class="fa-solid fa-arrow-right"></i> View AI CFO Strategic Actions
+              </button>
+            </div>
+          </div>
+
+          <!-- ===== SCREEN 5: AI CFO STRATEGY HANDOFF ===== -->
+          <div class="mobile-tab-view" id="mobTabCfo">
+            <div class="cfo-strategy-card">
+              <!-- Runway Impact Alert -->
+              <div class="runway-impact-alert" id="runwayImpactAlert">
+                <i class="fa-solid fa-exclamation-triangle"></i>
+                <span><strong>Warning:</strong> This $50,000 invoice drops cash runway from <strong>4.2 to 2.8 months</strong>.</span>
+              </div>
+
+              <!-- DeepSeek-R1 AI CFO Reasoning -->
+              <div class="cfo-reasoning-bubble">
+                <div class="bubble-header">
+                  <i class="fa-solid fa-robot"></i>
+                  <span>DeepSeek-R1 AI CFO Agent</span>
+                </div>
+                <div class="action-steps-list" id="cfoActionSteps">
+                  <div class="action-step-item">
+                    <span class="step-num-badge">1</span>
+                    <span id="cfoStep1">Renegotiate payment terms with Acme Corp to <strong>Net-60</strong> instead of Net-30, preserving $50k liquidity for 30 additional days.</span>
+                  </div>
+                  <div class="action-step-item">
+                    <span class="step-num-badge">2</span>
+                    <span id="cfoStep2">Freeze Q3 discretionary marketing spend to preserve <strong>$15,000 liquidity</strong> buffer.</span>
+                  </div>
+                  <div class="action-step-item">
+                    <span class="step-num-badge">3</span>
+                    <span id="cfoStep3">Accelerate AR collections by offering a <strong>2% early-payment discount</strong> on top 5 pending client invoices ($180k outstanding).</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="cfo-action-buttons-grid">
+                <button class="btn-cfo-action primary" onclick="openNet60EmailModal()">
+                  <i class="fa-solid fa-envelope"></i> Draft Net-60 Email to Vendor
+                </button>
+                <button class="btn-cfo-action danger" onclick="flagHighRiskToBoard()">
+                  <i class="fa-solid fa-flag"></i> Flag as High Risk to Board
+                </button>
+                <button class="btn-cfo-action outline" onclick="simulateRunwayRecovery()">
+                  <i class="fa-solid fa-chart-line"></i> Simulate Cash Flow Recovery
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== EVIDENCE TASKS TAB ===== -->
+          <div class="mobile-tab-view" id="mobTabEvidence">
+            <div class="evidence-mobile-view">
+              <div class="mobile-section-header">
+                <h6>Auditor Evidence Requests</h6>
+                <span class="badge-mini-amber" id="mobPendingBadge">2 Pending</span>
+              </div>
+
+              <div class="evidence-mobile-card" id="mobEvCard1">
+                <div class="ev-card-top">
+                  <span class="ev-cat"><i class="fa-solid fa-building-columns"></i> Cash & Bank</span>
+                  <span class="ev-due">Due Tomorrow</span>
+                </div>
+                <h5>August 2026 SVB Bank Statement (PDF)</h5>
+                <p class="ev-sub">Requested by Lead Auditor Alex Thorne for cash reconciliation test.</p>
+                <div class="ev-action-box">
+                  <button class="btn btn-sm btn-primary-gradient btn-block" onclick="simulateMobileEvidenceUpload('mobEvCard1', 'SVB_Statement_Aug2026.pdf')">
+                    <i class="fa-solid fa-upload"></i> 1-Tap Upload from Phone
+                  </button>
+                </div>
+              </div>
+
+              <div class="evidence-mobile-card" id="mobEvCard2">
+                <div class="ev-card-top">
+                  <span class="ev-cat"><i class="fa-solid fa-file-contract"></i> Vendor Compliance</span>
+                  <span class="ev-due">Due in 3 Days</span>
+                </div>
+                <h5>Signed Vendor MSA & W-9: Acme Tech Services</h5>
+                <p class="ev-sub">Required to clear high-risk wire review ($48,500.00).</p>
+                <div class="ev-action-box">
+                  <button class="btn btn-sm btn-primary-gradient btn-block" onclick="simulateMobileEvidenceUpload('mobEvCard2', 'Signed_W9_AcmeTech.pdf')">
+                    <i class="fa-solid fa-upload"></i> 1-Tap Upload from Phone
+                  </button>
+                </div>
+              </div>
+
+              <div class="evidence-mobile-card completed">
+                <div class="ev-card-top">
+                  <span class="ev-cat"><i class="fa-solid fa-check-double text-emerald"></i> Completed</span>
+                  <span class="ev-due text-emerald">Aug 20</span>
+                </div>
+                <h5>Salesforce MSA Master Agreement #9412</h5>
+                <p class="ev-sub">Uploaded & OCR extracted. Linked to ASC 606 revenue waterfall.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== DATA CONTRACTS INSPECTOR TAB ===== -->
+          <div class="mobile-tab-view" id="mobTabContracts">
+            <div class="extracted-data-card">
+              <div class="gauge-header" style="margin-bottom: 0;">
+                <span><i class="fa-solid fa-code text-cyan"></i> API Data Contracts</span>
+                <span style="font-size: 0.68rem; color: var(--text-muted);">Hackathon Spec v1.0</span>
+              </div>
+
+              <!-- Contract Tabs -->
+              <div class="contract-tabs">
+                <button class="contract-tab-btn active" onclick="switchContractTab('request')" id="contractTabReq">
+                  <i class="fa-solid fa-arrow-up-from-bracket"></i> Edge → Cloud
+                </button>
+                <button class="contract-tab-btn" onclick="switchContractTab('response')" id="contractTabRes">
+                  <i class="fa-solid fa-arrow-down-to-bracket"></i> Cloud → Edge
+                </button>
+              </div>
+
+              <!-- Request JSON -->
+              <div id="contractRequest">
+                <pre class="code-block-json">{
+  "device_id": "iQOO_15_Hackathon_Unit_1",
+  "auth_token": "bearer_xxx",
+  "extracted_data": {
+    "document_type": "tax_invoice",
+    "vendor_name": "Acme Software Corp",
+    "invoice_date": "2026-08-22",
+    "line_items_total": 45000.00,
+    "tax_amount": 5000.00,
+    "gross_total": 50000.00
+  },
+  "request_type": "audit_and_cfo_analysis"
+}</pre>
+              </div>
+
+              <!-- Response JSON -->
+              <div id="contractResponse" style="display: none;">
+                <pre class="code-block-json">{
+  "status": "success",
+  "audit_results": {
+    "risk_score": 85,
+    "risk_level": "HIGH",
+    "explainable_ai_reason": "Invoice date falls on a Sunday. Vendor amount is exactly 200% higher than historical average for Acme Corp."
+  },
+  "cfo_assistant": {
+    "updated_runway_months": 2.8,
+    "updated_cash_burn": 120000.00,
+    "action_steps": [
+      "Renegotiate payment terms with Acme Corp to Net-60.",
+      "Freeze Q3 discretionary marketing spend to preserve $15k liquidity.",
+      "Accelerate AR collections by offering a 2% discount on top 5 pending client invoices."
+    ]
+  }
+}</pre>
+              </div>
+
+              <button class="btn-cfo-action outline" onclick="copyContractJson()" style="margin-top: 8px;">
+                <i class="fa-solid fa-copy"></i> Copy to Clipboard
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ===== BOTTOM NAVIGATION BAR ===== -->
+        <nav class="mobile-bottom-nav" style="position: relative;">
+          <button class="nav-tab active" data-mob-tab="mobTabHome" onclick="switchMobileTab('mobTabHome')">
+            <i class="fa-solid fa-house"></i>
+            <span>Dashboard</span>
+          </button>
+          <button class="nav-tab" data-mob-tab="mobTabScan" onclick="switchMobileTab('mobTabScan')">
+            <i class="fa-solid fa-camera"></i>
+            <span>Scan</span>
+          </button>
+
+          <!-- FAB Button (Center) -->
+          <div class="fab-container" style="position: relative; bottom: auto; left: auto; transform: none;">
+            <button class="fab-btn-iqoo" onclick="switchMobileTab('mobTabScan')" title="New Audit Capture">
+              <i class="fa-solid fa-bolt"></i>
+            </button>
+          </div>
+
+          <button class="nav-tab" data-mob-tab="mobTabEvidence" onclick="switchMobileTab('mobTabEvidence')">
+            <i class="fa-solid fa-inbox"></i>
+            <span>Evidence</span>
+            <span class="badge-dot-amber"></span>
+          </button>
+          <button class="nav-tab" data-mob-tab="mobTabContracts" onclick="switchMobileTab('mobTabContracts')">
+            <i class="fa-solid fa-code"></i>
+            <span>API</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: NET-60 EMAIL DRAFT ===== -->
+  <div class="modal-overlay" id="net60EmailModal">
+    <div class="modal-card glass-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-envelope text-cyan"></i>
+          <div>
+            <h3>Draft Net-60 Email</h3>
+            <span class="sub">Auto-generated vendor payment term renegotiation</span>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeNet60EmailModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px;">
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 4px;">To:</label>
+          <div style="font-family: var(--font-mono); font-size: 0.82rem; color: #fff; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">accounts@acmesoftware.com</div>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 4px;">Subject:</label>
+          <div style="font-family: var(--font-mono); font-size: 0.82rem; color: #fff; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">Payment Terms Amendment Request — INV-2026-4421 (Net-60)</div>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 4px;">Body:</label>
+          <div style="font-size: 0.78rem; color: var(--text-secondary); background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; border: 1px solid var(--border-subtle); line-height: 1.5; max-height: 220px; overflow-y: auto;">
+            Dear Accounts Payable Team,<br><br>
+            We are writing to request an amendment to the payment terms on Invoice <strong>INV-2026-4421</strong> (Amount: <strong>$50,000.00</strong>) from Net-30 to <strong>Net-60</strong>.<br><br>
+            This adjustment will allow us to better align our cash flow obligations during Q3 2026. The revised payment schedule would move the due date from <strong>September 21, 2026</strong> to <strong>October 21, 2026</strong>.<br><br>
+            We value our partnership with Acme Software Corp and are committed to prompt settlement under the revised terms.<br><br>
+            Warm regards,<br>
+            <strong>Aditya Siwach, CA</strong><br>
+            ClariFi Edge Finance Team<br>
+            <em>Powered by ClariFi AI CFO Assistant</em>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeNet60EmailModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="sendNet60Email()"><i class="fa-solid fa-paper-plane"></i> Send Email</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: APPLICATION SETTINGS ===== -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-card glass-card settings-modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-gear text-cyan"></i>
+          <div>
+            <h3>ClariFi Settings & Configuration</h3>
+            <span class="sub">Manage workspace theme, AI models, and audit parameters</span>
+          </div>
+        </div>
+        <button class="modal-close" id="closeSettingsModal">&times;</button>
+      </div>
+
+      <div class="settings-tabs">
+        <button class="settings-tab-btn active" data-settings-tab="set-appearance">
+          <i class="fa-solid fa-palette"></i> Appearance
+        </button>
+        <button class="settings-tab-btn" data-settings-tab="set-audit">
+          <i class="fa-solid fa-brain"></i> AI & Audit Engine
+        </button>
+        <button class="settings-tab-btn" data-settings-tab="set-controls">
+          <i class="fa-solid fa-sliders"></i> Controls & Alerts
+        </button>
+      </div>
+
+      <div class="modal-body p-0">
+        <!-- Tab 1: Appearance -->
+        <div class="settings-tab-pane active" id="set-appearance">
+          <div>
+            <div class="setting-section-title">Interface Theme</div>
+            <div class="theme-selector-grid">
+              <div class="theme-card-option active" data-theme-val="dark">
+                <i class="fa-solid fa-moon text-cyan"></i>
+                <span>Obsidian Dark</span>
+              </div>
+              <div class="theme-card-option" data-theme-val="light">
+                <i class="fa-solid fa-sun text-amber"></i>
+                <span>Crisp Light</span>
+              </div>
+              <div class="theme-card-option" data-theme-val="system">
+                <i class="fa-solid fa-desktop text-emerald"></i>
+                <span>System Default</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="setting-section-title">Accent Color Palette</div>
+            <div class="accent-palette-grid">
+              <button class="color-swatch-btn swatch-cyan active" data-color-hex="#00F0FF" data-color-name="Electric Cyan"><i class="fa-solid fa-check"></i></button>
+              <button class="color-swatch-btn swatch-emerald" data-color-hex="#10B981" data-color-name="Emerald Green"><i class="fa-solid fa-check"></i></button>
+              <button class="color-swatch-btn swatch-violet" data-color-hex="#8B5CF6" data-color-name="Royal Violet"><i class="fa-solid fa-check"></i></button>
+              <button class="color-swatch-btn swatch-amber" data-color-hex="#F59E0B" data-color-name="Amber Gold"><i class="fa-solid fa-check"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: AI & Audit Engine -->
+        <div class="settings-tab-pane" id="set-audit">
+          <div class="form-group">
+            <label>AI Risk Score Sensitivity Threshold</label>
+            <select class="form-control">
+              <option value="standard">Standard (Flag score > 70) - Recommended</option>
+              <option value="conservative">Conservative (Flag score > 50) - Maximum Rigor</option>
+              <option value="relaxed">Critical Only (Flag score > 85)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Explainable AI (XAI) Model Engine</label>
+            <select class="form-control">
+              <option value="v3">ClariFi Forensic Neural Net v3.4 (Big 4 Verified)</option>
+              <option value="v2">ClariFi Fast-Match v2.8</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Edge NPU Runtime</label>
+            <select class="form-control">
+              <option value="executorch">ExecuTorch INT8 (Snapdragon Hexagon NPU)</option>
+              <option value="tflite">TensorFlow Lite (CPU Fallback)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Primary Accounting Framework</label>
+            <select class="form-control">
+              <option value="us_gaap">US GAAP (ASC 606 / ASC 842)</option>
+              <option value="ifrs">IFRS (IFRS 15 / IFRS 16)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tab 3: Controls & Alerts -->
+        <div class="settings-tab-pane" id="set-controls">
+          <div class="setting-toggle-row">
+            <div class="toggle-label-group">
+              <strong>365-Day Continuous Controls Surveillance</strong>
+              <p>Runs automated hourly background tests across all 18 SOX key controls.</p>
+            </div>
+            <label class="switch-toggle">
+              <input type="checkbox" checked>
+              <span class="slider-switch"></span>
+            </label>
+          </div>
+
+          <div class="setting-toggle-row">
+            <div class="toggle-label-group">
+              <strong>Offline NPU Processing Priority</strong>
+              <p>Prioritizes on-device Snapdragon NPU extraction before cloud handoff.</p>
+            </div>
+            <label class="switch-toggle">
+              <input type="checkbox" checked>
+              <span class="slider-switch"></span>
+            </label>
+          </div>
+
+          <div class="setting-toggle-row">
+            <div class="toggle-label-group">
+              <strong>Automated Mobile Evidence Reminders</strong>
+              <p>Sends instant push notifications for pending audit requests.</p>
+            </div>
+            <label class="switch-toggle">
+              <input type="checkbox" checked>
+              <span class="slider-switch"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="closeSettingsModalFooter">Cancel</button>
+        <button class="btn btn-primary" id="saveSettingsBtn"><i class="fa-solid fa-check"></i> Save & Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
