@@ -18,19 +18,11 @@ app = FastAPI(title="Edge-Cloud AI Auditor API")
 # Serve the root HTML pages
 @app.get("/")
 async def serve_index():
-    return FileResponse(os.path.join(os.path.dirname(__file__), "index.html"))
+    return FileResponse(os.path.join(os.path.dirname(__file__), "user.html"))
 
 @app.get("/user")
 async def serve_user():
     return FileResponse(os.path.join(os.path.dirname(__file__), "user.html"))
-
-@app.get("/admin")
-async def serve_admin():
-    return FileResponse(os.path.join(os.path.dirname(__file__), "admin.html"))
-
-@app.get("/why-us")
-async def serve_why_us():
-    return FileResponse(os.path.join(os.path.dirname(__file__), "why-us.html"))
 
 
 # Allow all origins so the phone browser doesn't block requests
