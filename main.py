@@ -143,7 +143,6 @@ async def upload_document(file: UploadFile = File(...)):
                 "draft_email": draft_email
             }
         }
-        }
     except Exception as e:
         logger.error(f"Upload processing failed: {e}\n{traceback.format_exc()}")
         return JSONResponse(
