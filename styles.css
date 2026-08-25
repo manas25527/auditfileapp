@@ -6654,3 +6654,56 @@ input:checked + .slider-switch:before {
   }
 }
 
+/* Scanner Mode Tabs & Switcher */
+.scanner-mode-tabs {
+  display: flex;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.scanner-mode-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.scanner-mode-tab:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.scanner-mode-tab.active {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(59, 130, 246, 0.15));
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  color: var(--cyan);
+}
+
+.scanner-mode-content {
+  display: none;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.scanner-mode-content.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
