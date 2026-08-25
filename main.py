@@ -1,10 +1,31 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from schemas import AuditRequest, FinalResponse, AuditResults, CFOAssistant
 from finance_engine import calculate_financial_health
 from cfo_agent import get_ai_cfo_advice
+import os
 
 app = FastAPI(title="Edge-Cloud AI Auditor API")
+
+# Serve the root HTML pages
+@app.get("/")
+async def serve_index():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "index.html"))
+
+@app.get("/user")
+async def serve_user():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "user.html"))
+
+@app.get("/admin")
+async def serve_admin():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "admin.html"))
+
+@app.get("/why-us")
+async def serve_why_us():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "why-us.html"))
+
 
 # Allow all origins so the phone browser doesn't block requests
 app.add_middleware(
@@ -50,3 +71,6 @@ async def process_audit(request: AuditRequest):
             action_steps=action_steps
         )
     )
+
+# Mount static files last so it doesn't shadow API routes
+app.mount("/", StaticFiles(directory=os.path.dirname(__file__) or "."), name="static")
