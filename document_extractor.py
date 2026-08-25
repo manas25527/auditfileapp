@@ -14,16 +14,30 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
     """Extract all text from a PDF file. Uses OCR as fallback for scanned PDFs."""
     text = ""
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
-        for page in pdf.pages:
+        # Process a maximum of 20 pages to avoid timeouts on huge PDFs
+        for i, page in enumerate(pdf.pages):
+            if i >= 20:
+                break
+            
             page_text = page.extract_text()
             if page_text and len(page_text.strip()) > 20:
                 text += page_text + "\n"
             else:
                 # Fallback to OCR for scanned images inside PDF
                 try:
-                    img = page.to_image(resolution=300).original
+                    # Use lower resolution to speed up generation
+                    img = page.to_image(resolution=150).original
                     if img.mode != "RGB":
                         img = img.convert("RGB")
+                        
+                    # Downscale to avoid OCR timeouts
+                    max_dim = 1600
+                    if img.width > max_dim or img.height > max_dim:
+                        ratio = min(max_dim / img.width, max_dim / img.height)
+                        new_size = (int(img.width * ratio), int(img.height * ratio))
+                        resample_method = getattr(Image, 'Resampling', Image).LANCZOS
+                        img = img.resize(new_size, resample_method)
+                        
                     text += pytesseract.image_to_string(img) + "\n"
                 except Exception:
                     pass
