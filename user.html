@@ -229,49 +229,92 @@
                 <p>Upload a PDF, CSV or photo. Our AI extracts data into tables, detects unpaid salaries &amp; pending refunds, and checks bills for anomalies.</p>
               </div>
 
-              <!-- Upload Area -->
-              <div class="upload-zone" id="uploadZone">
-                <!-- Default state: upload prompt -->
-                <div class="upload-prompt" id="uploadPrompt">
-                  <div class="upload-icon-large">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                  </div>
-                  <div class="upload-prompt-text">Tap to upload a document</div>
-                  <div class="upload-prompt-sub">PDF, CSV, JPG, PNG — max 10MB</div>
-                </div>
-
-                <!-- Uploaded state: file info (hidden by default) -->
-                <div class="upload-file-info" id="uploadFileInfo" style="display:none;">
-                  <div class="upload-file-icon">
-                    <i class="fa-solid fa-file-circle-check"></i>
-                  </div>
-                  <div class="upload-file-details">
-                    <div class="upload-file-name" id="uploadedFileName">document.pdf</div>
-                    <div class="upload-file-status" id="uploadedFileStatus">Scanning document...</div>
-                  </div>
-                </div>
-
-                <!-- Hidden file inputs -->
-                <input type="file" id="pdfFileInput" accept=".pdf,.csv,.xlsx,application/pdf,text/csv" style="display:none;" onchange="handleFileUpload(this)">
-                <input type="file" id="billPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleFileUpload(this)">
-                <input type="file" id="galleryFileInput" accept="image/*,.pdf,application/pdf,.csv,text/csv" style="display:none;" onchange="handleFileUpload(this)">
-              </div>
-
-              <!-- Upload Action Buttons -->
-              <div class="upload-actions-grid">
-                <button class="upload-action-btn primary" onclick="document.getElementById('pdfFileInput').click()">
-                  <i class="fa-solid fa-file-pdf"></i>
-                  <span class="upload-action-label">Upload PDF / CSV</span>
-                  <span class="upload-action-desc">Payroll, ledger, reports</span>
+              <!-- Mode Selection Tabs -->
+              <div class="scanner-mode-tabs">
+                <button class="scanner-mode-tab active" id="tabBtnTable" onclick="switchScannerMode('table')">
+                  <i class="fa-solid fa-table"></i> PDF / CSV Table
                 </button>
-                <button class="upload-action-btn secondary" onclick="document.getElementById('billPhotoInput').click()">
-                  <i class="fa-solid fa-camera"></i>
-                  <span class="upload-action-label">Scan Bill / Receipt</span>
-                  <span class="upload-action-desc">Check overcharges & fakes</span>
+                <button class="scanner-mode-tab" id="tabBtnCamera" onclick="switchScannerMode('camera')">
+                  <i class="fa-solid fa-camera"></i> Bill Photo Check
                 </button>
               </div>
 
-              <div style="display:flex; gap:8px; margin-top:8px;">
+              <!-- Container 1: PDF/CSV Table Mode -->
+              <div id="tableModeContainer" class="scanner-mode-content active">
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('pdfFileInput').click()">
+                  <!-- Default state: upload prompt -->
+                  <div class="upload-prompt" id="uploadPrompt">
+                    <div class="upload-icon-large">
+                      <i class="fa-solid fa-file-invoice"></i>
+                    </div>
+                    <div class="upload-prompt-text">Tap to upload PDF or CSV</div>
+                    <div class="upload-prompt-sub">Supports payrolls, ledgers & statements</div>
+                  </div>
+
+                  <!-- Uploaded state: file info (hidden by default) -->
+                  <div class="upload-file-info" id="uploadFileInfo" style="display:none;">
+                    <div class="upload-file-icon">
+                      <i class="fa-solid fa-file-circle-check"></i>
+                    </div>
+                    <div class="upload-file-details">
+                      <div class="upload-file-name" id="uploadedFileName">document.pdf</div>
+                      <div class="upload-file-status" id="uploadedFileStatus">Scanning document...</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display:flex; gap:8px; margin-top:10px;">
+                  <button class="btn btn-sm btn-primary-gradient" style="flex:1; font-size:0.72rem;" onclick="document.getElementById('pdfFileInput').click()">
+                    <i class="fa-solid fa-file-pdf"></i> Select PDF / CSV File
+                  </button>
+                </div>
+              </div>
+
+              <!-- Container 2: Bill Photo Check Mode (viewfinder restored) -->
+              <div id="cameraModeContainer" class="scanner-mode-content" style="display:none;">
+                <div class="camera-hud-box" id="cameraHudBox">
+                  <div class="hud-corner tl"></div>
+                  <div class="hud-corner tr"></div>
+                  <div class="hud-corner bl"></div>
+                  <div class="hud-corner br"></div>
+                  <div class="hud-guide-text">Align receipt within frame</div>
+
+                  <!-- Simulated Receipt in Viewfinder -->
+                  <div class="sample-receipt-image" id="sampleReceiptImage">
+                    <div class="receipt-paper">
+                      <div class="rec-title" id="receiptVendorName">ACME SOFTWARE CORP</div>
+                      <div class="rec-row"><span>Invoice #:</span> <span id="receiptInvNum">INV-2026-4421</span></div>
+                      <div class="rec-row"><span>Date:</span> <span id="receiptDate">Aug 22, 2026</span></div>
+                      <div class="rec-row"><span>Software License:</span> <span id="receiptLineItem">$45,000.00</span></div>
+                      <div class="rec-row"><span>GST (18%):</span> <span id="receiptTax">$5,000.00</span></div>
+                      <div class="rec-divider"></div>
+                      <div class="rec-row bold"><span>TOTAL:</span> <span id="receiptTotal">$50,000.00</span></div>
+                    </div>
+                  </div>
+
+                  <!-- Controls overlay -->
+                  <div class="hud-controls-bar">
+                    <button class="hud-tool-btn" title="Flash"><i class="fa-solid fa-bolt"></i></button>
+                    <button class="hud-shutter-btn" id="triggerEdgeScan" onclick="startEdgeProcessingFlow()">
+                      <div class="hud-shutter-inner"></div>
+                    </button>
+                    <button class="hud-tool-btn" title="Gallery" onclick="document.getElementById('galleryFileInput').click()"><i class="fa-solid fa-images"></i></button>
+                  </div>
+                </div>
+
+                <div style="display:flex; gap:8px; margin-top:10px;">
+                  <button class="btn btn-sm btn-primary-gradient" style="flex:1; font-size:0.72rem;" onclick="document.getElementById('billPhotoInput').click()">
+                    <i class="fa-solid fa-camera"></i> Take Photo / Upload Bill
+                  </button>
+                </div>
+              </div>
+
+              <!-- Shared controls & Hidden Inputs -->
+              <input type="file" id="pdfFileInput" accept=".pdf,.csv,.xlsx,application/pdf,text/csv" style="display:none;" onchange="handleFileUpload(this)">
+              <input type="file" id="billPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleFileUpload(this)">
+              <input type="file" id="galleryFileInput" accept="image/*,.pdf,application/pdf,.csv,text/csv" style="display:none;" onchange="handleFileUpload(this)">
+
+              <div style="display:flex; gap:8px; margin-top:10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top:10px;">
                 <button class="btn btn-sm btn-outline" style="flex:1; font-size:0.72rem;" onclick="document.getElementById('galleryFileInput').click()">
                   <i class="fa-solid fa-images"></i> Pick from Gallery
                 </button>

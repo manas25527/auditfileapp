@@ -65,6 +65,113 @@ def extract_text_from_image(file_bytes: bytes) -> str:
     return text
 
 
+def extract_tables_from_pdf(file_bytes: bytes) -> list[dict]:
+    """Extract structured grid tables from a PDF using pdfplumber."""
+    entries = []
+    try:
+        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+            for page in pdf.pages:
+                tables = page.extract_tables()
+                for table in tables:
+                    if not table or len(table) < 2:
+                        continue
+                    
+                    # Inspect first few rows to locate column indices
+                    header_row = -1
+                    name_col = -1
+                    amount_col = -1
+                    status_col = -1
+                    
+                    for r_idx, row in enumerate(table[:3]):
+                        row_clean = [str(cell).strip().lower() if cell is not None else "" for cell in row]
+                        if any(any(k in cell for k in ['name', 'employee', 'staff', 'person']) for cell in row_clean):
+                            header_row = r_idx
+                            for c_idx, cell in enumerate(row_clean):
+                                if any(k in cell for k in ['name', 'employee', 'person', 'staff', 'worker']):
+                                    name_col = c_idx
+                                elif any(k in cell for k in ['salary', 'amount', 'pay', 'wage', 'compensation', 'total']):
+                                    amount_col = c_idx
+                                elif any(k in cell for k in ['status', 'state', 'payment', 'remark']):
+                                    status_col = c_idx
+                            break
+                    
+                    # If we couldn't find headers by keyword, guess indices
+                    if name_col == -1 or amount_col == -1:
+                        test_row = table[1] if len(table) > 1 else table[0]
+                        for c_idx, cell in enumerate(test_row):
+                            cell_str = str(cell).strip()
+                            if not cell_str:
+                                continue
+                            if re.search(r'^\$?[\d,]+\.?\d*$', cell_str) or re.search(r'^\d+$', cell_str):
+                                if amount_col == -1:
+                                    amount_col = c_idx
+                            elif len(cell_str) > 2 and not re.search(r'\d', cell_str):
+                                if name_col == -1:
+                                    name_col = c_idx
+                    
+                    if name_col == -1: name_col = 0
+                    if amount_col == -1: amount_col = min(1, len(table[0]) - 1)
+                    
+                    start_row = header_row + 1 if header_row >= 0 else 0
+                    for row in table[start_row:]:
+                        if not row or len(row) <= max(name_col, amount_col):
+                            continue
+                        
+                        name = str(row[name_col]).strip() if row[name_col] is not None else ""
+                        if not name or name.lower() in ['name', 'employee', 'total', 'subtotal', 'grand total', 'sr', 's.no', '#', '---']:
+                            continue
+                        
+                        # Extract amount
+                        amount = 0.0
+                        amt_str = str(row[amount_col]).strip() if row[amount_col] is not None else ""
+                        if amt_str:
+                            amt_match = re.search(r'([\d,]+\.?\d*)', amt_str)
+                            if amt_match:
+                                try:
+                                    amount = float(amt_match.group(1).replace(",", ""))
+                                except ValueError:
+                                    pass
+                        
+                        # Extract status
+                        status = "UNKNOWN"
+                        status_str = ""
+                        if status_col >= 0 and status_col < len(row) and row[status_col] is not None:
+                            status_str = str(row[status_col]).strip().lower()
+                        else:
+                            for cell in row:
+                                if cell is None: continue
+                                cell_str = str(cell).strip().lower()
+                                if any(k in cell_str for k in ['paid', 'received', 'credited', 'success', 'done', 'completed', 'pending', 'unpaid', 'due', 'outstanding', 'overdue', 'hold', 'failed']):
+                                    status_str = cell_str
+                                    break
+                        
+                        paid_keywords = ['paid', 'received', 'credited', 'success', 'done', 'completed']
+                        unpaid_keywords = ['pending', 'unpaid', 'due', 'outstanding', 'overdue', 'hold', 'failed']
+                        
+                        if any(k in status_str for k in paid_keywords):
+                            status = "PAID"
+                        elif any(k in status_str for k in unpaid_keywords):
+                            if 'overdue' in status_str or 'delayed' in status_str:
+                                status = "OVERDUE"
+                            elif 'hold' in status_str:
+                                status = "ON HOLD"
+                            elif 'failed' in status_str:
+                                status = "FAILED"
+                            else:
+                                status = "PENDING"
+                        elif status_str:
+                            status = status_str.upper()[:20]
+                            
+                        entries.append({
+                            "name": name,
+                            "amount": amount,
+                            "status": status
+                        })
+    except Exception as e:
+        print(f"Error extracting tables from PDF: {e}")
+    return entries
+
+
 def parse_invoice_fields(raw_text: str) -> dict:
     """
     Parse raw OCR/PDF text to extract structured invoice fields.
@@ -577,8 +684,10 @@ def extract_document_data(file_bytes: bytes, filename: str) -> dict:
     """
     ext = filename.lower().rsplit(".", 1)[-1] if "." in filename else ""
 
+    pdf_table_entries = []
     if ext == "pdf":
         raw_text = extract_text_from_pdf(file_bytes)
+        pdf_table_entries = extract_tables_from_pdf(file_bytes)
     elif ext in ("jpg", "jpeg", "png", "webp", "bmp", "tiff", "tif", "heic"):
         raw_text = extract_text_from_image(file_bytes)
     else:
@@ -588,7 +697,7 @@ def extract_document_data(file_bytes: bytes, filename: str) -> dict:
         except Exception:
             raw_text = file_bytes.decode("utf-8", errors="ignore")
 
-    if not raw_text.strip():
+    if not raw_text.strip() and not pdf_table_entries:
         return {
             "document_type": "Unknown",
             "vendor_name": "Unreadable Document",
@@ -606,9 +715,36 @@ def extract_document_data(file_bytes: bytes, filename: str) -> dict:
     parsed = parse_invoice_fields(raw_text)
 
     # Run smart analysis
-    pending_refunds = detect_pending_refunds(raw_text)
-    unpaid_salaries = detect_unpaid_salaries(raw_text)
-    all_entries = extract_all_entries(raw_text)
+    if ext == "pdf" and pdf_table_entries:
+        all_entries = pdf_table_entries
+        pending_refunds = []
+        unpaid_salaries = []
+        for entry in all_entries:
+            name_lower = entry["name"].lower()
+            status_upper = entry["status"].upper()
+            is_unpaid = status_upper in ["PENDING", "OVERDUE", "ON HOLD", "FAILED", "NOT RECEIVED", "UNPAID"]
+            
+            # Check for refunds
+            if is_unpaid and any(kw in name_lower for kw in ["refund", "credit", "return", "reimbursement", "cashback"]):
+                pending_refunds.append({
+                    "name": entry["name"],
+                    "amount": entry["amount"],
+                    "status": entry["status"],
+                    "line_ref": f"Table: {entry['name']}"
+                })
+            # Check for salaries
+            elif is_unpaid:
+                unpaid_salaries.append({
+                    "name": entry["name"],
+                    "amount": entry["amount"],
+                    "status": entry["status"],
+                    "line_ref": f"Table: {entry['name']}"
+                })
+    else:
+        pending_refunds = detect_pending_refunds(raw_text)
+        unpaid_salaries = detect_unpaid_salaries(raw_text)
+        all_entries = extract_all_entries(raw_text)
+
     content_summary = generate_content_summary(raw_text, parsed["document_type"], all_entries)
 
     parsed["content_summary"] = content_summary

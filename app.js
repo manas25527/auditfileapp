@@ -10,6 +10,37 @@ const API_BASE_URL = window.location.origin;
 // when a real file upload is already in progress
 let _uploadInProgress = false;
 
+function switchScannerMode(mode) {
+  const tableBtn = document.getElementById('tabBtnTable');
+  const cameraBtn = document.getElementById('tabBtnCamera');
+  const tableContainer = document.getElementById('tableModeContainer');
+  const cameraContainer = document.getElementById('cameraModeContainer');
+
+  if (mode === 'table') {
+    if (tableBtn) tableBtn.classList.add('active');
+    if (cameraBtn) cameraBtn.classList.remove('active');
+    if (tableContainer) {
+      tableContainer.style.display = 'block';
+      tableContainer.classList.add('active');
+    }
+    if (cameraContainer) {
+      cameraContainer.style.display = 'none';
+      cameraContainer.classList.remove('active');
+    }
+  } else {
+    if (tableBtn) tableBtn.classList.remove('active');
+    if (cameraBtn) cameraBtn.classList.add('active');
+    if (tableContainer) {
+      tableContainer.style.display = 'none';
+      tableContainer.classList.remove('active');
+    }
+    if (cameraContainer) {
+      cameraContainer.style.display = 'block';
+      cameraContainer.classList.add('active');
+    }
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initNavbarScroll();
   initMobileMenu();
