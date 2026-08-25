@@ -269,6 +269,12 @@ def detect_unpaid_salaries(raw_text: str) -> list[dict]:
         if not line_clean or len(line_clean) < 5:
             continue
 
+        # Skip header rows that contain column labels
+        if re.match(r'^(name|employee|sr|s\.no|#|sl|id)\b', line_clean, re.IGNORECASE):
+            continue
+        if re.search(r'\b(name|employee)\b.*\b(salary|amount|status)\b', line_clean, re.IGNORECASE):
+            continue
+
         # Check if line has salary-related content
         has_salary = salary_keywords.search(line_clean)
 
@@ -354,7 +360,166 @@ def detect_unpaid_salaries(raw_text: str) -> list[dict]:
     return unpaid
 
 
-def generate_content_summary(raw_text: str, doc_type: str) -> str:
+def extract_all_entries(raw_text: str) -> list[dict]:
+    """
+    Parse ALL data rows from the document into a structured table.
+    Attempts to detect tabular data (CSV, payroll sheets, ledgers) and
+    return every row with name, amount, and payment status.
+    """
+    entries = []
+    lines = raw_text.split("\n")
+    amount_pattern = re.compile(r'[\$₹€£]?\s*([\d,]+\.?\d{0,2})')
+
+    # Status keywords
+    paid_keywords = re.compile(
+        r'\b(paid|received|credited|transferred|deposited|cleared|settled|processed|done|completed|success)\b',
+        re.IGNORECASE
+    )
+    unpaid_keywords = re.compile(
+        r'\b(pending|unpaid|due|outstanding|not\s*paid|not\s*received|overdue|delayed|hold|withheld|failed)\b',
+        re.IGNORECASE
+    )
+
+    # Detect if it looks like CSV/tabular data
+    is_csv = any(',' in line and line.count(',') >= 2 for line in lines[:5])
+    delimiter = ',' if is_csv else None
+
+    # Try to find header row to understand column positions
+    header_idx = -1
+    header_cols = []
+    for i, line in enumerate(lines[:10]):
+        line_clean = line.strip()
+        if not line_clean:
+            continue
+        # Check if this looks like a header row
+        if re.search(r'\b(name|employee|person|staff|worker)\b', line_clean, re.IGNORECASE):
+            header_idx = i
+            if delimiter:
+                header_cols = [c.strip().lower() for c in line_clean.split(delimiter)]
+            break
+
+    # Parse data rows
+    start_idx = header_idx + 1 if header_idx >= 0 else 0
+    for i in range(start_idx, len(lines)):
+        line_clean = lines[i].strip()
+        if not line_clean or len(line_clean) < 3:
+            continue
+
+        # Skip lines that look like headers or labels
+        if re.match(r'^(name|employee|sr|s\.no|#|sl|id|total|sub.?total|grand|---)\b', line_clean, re.IGNORECASE):
+            continue
+        if re.search(r'\b(name|employee)\b.*\b(salary|amount|status)\b', line_clean, re.IGNORECASE):
+            continue
+
+        entry = {"name": "", "amount": 0.0, "status": "UNKNOWN", "line_num": i + 1}
+
+        if delimiter and header_cols:
+            # CSV/delimited parsing
+            cols = [c.strip() for c in line_clean.split(delimiter)]
+            if len(cols) < 2:
+                continue
+
+            # Find name column
+            name_idx = -1
+            for j, h in enumerate(header_cols):
+                if any(k in h for k in ['name', 'employee', 'person', 'staff', 'worker', 'member']):
+                    name_idx = j
+                    break
+            if name_idx == -1:
+                name_idx = 0  # Default to first column
+
+            # Find amount column
+            amt_idx = -1
+            for j, h in enumerate(header_cols):
+                if any(k in h for k in ['salary', 'amount', 'pay', 'wage', 'compensation', 'total', 'sum']):
+                    amt_idx = j
+                    break
+
+            # Find status column
+            status_idx = -1
+            for j, h in enumerate(header_cols):
+                if any(k in h for k in ['status', 'state', 'payment', 'remark']):
+                    status_idx = j
+                    break
+
+            # Extract values
+            if name_idx < len(cols):
+                entry["name"] = cols[name_idx].strip()
+            if not entry["name"] or len(entry["name"]) < 2:
+                continue
+
+            if amt_idx >= 0 and amt_idx < len(cols):
+                amt_match = amount_pattern.search(cols[amt_idx])
+                if amt_match:
+                    try:
+                        entry["amount"] = float(amt_match.group(1).replace(",", ""))
+                    except ValueError:
+                        pass
+
+            if status_idx >= 0 and status_idx < len(cols):
+                status_text = cols[status_idx].strip()
+                if paid_keywords.search(status_text):
+                    entry["status"] = "PAID"
+                elif unpaid_keywords.search(status_text):
+                    if re.search(r'overdue|delayed', status_text, re.IGNORECASE):
+                        entry["status"] = "OVERDUE"
+                    elif re.search(r'hold|withheld', status_text, re.IGNORECASE):
+                        entry["status"] = "ON HOLD"
+                    elif re.search(r'failed', status_text, re.IGNORECASE):
+                        entry["status"] = "FAILED"
+                    else:
+                        entry["status"] = "PENDING"
+                else:
+                    entry["status"] = status_text.upper()[:20] if status_text else "UNKNOWN"
+            else:
+                # No status column — infer from line content
+                if paid_keywords.search(line_clean):
+                    entry["status"] = "PAID"
+                elif unpaid_keywords.search(line_clean):
+                    entry["status"] = "PENDING"
+
+        else:
+            # Non-CSV: try to parse freeform lines with amounts
+            amt_match = amount_pattern.search(line_clean)
+            if not amt_match:
+                continue  # Skip lines without amounts
+
+            try:
+                entry["amount"] = float(amt_match.group(1).replace(",", ""))
+            except ValueError:
+                continue
+
+            # Skip if amount is suspiciously small (likely a date or index)
+            if entry["amount"] < 1:
+                continue
+
+            # Extract name (remove amount and status words)
+            name = amount_pattern.sub("", line_clean).strip()
+            name = paid_keywords.sub("", name).strip()
+            name = unpaid_keywords.sub("", name).strip()
+            name = re.sub(r'[\$₹€£:\-|•–—,]+', ' ', name).strip()
+            name = re.sub(r'\s+', ' ', name).strip()
+            if not name or len(name) < 2:
+                name = f"Entry #{i + 1}"
+            entry["name"] = name[:80]
+
+            # Detect status
+            if paid_keywords.search(line_clean):
+                entry["status"] = "PAID"
+            elif unpaid_keywords.search(line_clean):
+                if re.search(r'overdue|delayed', line_clean, re.IGNORECASE):
+                    entry["status"] = "OVERDUE"
+                elif re.search(r'hold|withheld', line_clean, re.IGNORECASE):
+                    entry["status"] = "ON HOLD"
+                else:
+                    entry["status"] = "PENDING"
+
+        entries.append(entry)
+
+    return entries
+
+
+def generate_content_summary(raw_text: str, doc_type: str, all_entries: list = None) -> str:
     """Generate a brief human-readable summary of the document content."""
     lines = [l.strip() for l in raw_text.split("\n") if l.strip()]
     total_lines = len(lines)
@@ -371,6 +536,12 @@ def generate_content_summary(raw_text: str, doc_type: str) -> str:
         summary_parts.append("Contains invoice details")
     if "tax" in text_lower or "gst" in text_lower:
         summary_parts.append("Contains tax information")
+
+    if all_entries:
+        total = len(all_entries)
+        paid = sum(1 for e in all_entries if e["status"] == "PAID")
+        unpaid = total - paid
+        summary_parts.append(f"{total} entries found ({paid} paid, {unpaid} pending/other)")
 
     return ". ".join(summary_parts) + "."
 
@@ -405,7 +576,8 @@ def extract_document_data(file_bytes: bytes, filename: str) -> dict:
             "raw_text": "(No text could be extracted)",
             "content_summary": "Document could not be read.",
             "pending_refunds": [],
-            "unpaid_salaries": []
+            "unpaid_salaries": [],
+            "all_entries": []
         }
 
     parsed = parse_invoice_fields(raw_text)
@@ -413,11 +585,14 @@ def extract_document_data(file_bytes: bytes, filename: str) -> dict:
     # Run smart analysis
     pending_refunds = detect_pending_refunds(raw_text)
     unpaid_salaries = detect_unpaid_salaries(raw_text)
-    content_summary = generate_content_summary(raw_text, parsed["document_type"])
+    all_entries = extract_all_entries(raw_text)
+    content_summary = generate_content_summary(raw_text, parsed["document_type"], all_entries)
 
     parsed["content_summary"] = content_summary
     parsed["pending_refunds"] = pending_refunds
     parsed["unpaid_salaries"] = unpaid_salaries
+    parsed["all_entries"] = all_entries
 
     return parsed
+
 

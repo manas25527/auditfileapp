@@ -5,3 +5,7 @@ pandas
 torch
 transformers
 accelerate
+pdfplumber
+pytesseract
+Pillow
+python-multipart
