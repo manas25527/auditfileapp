@@ -1,9 +1,19 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from schemas import AuditRequest, FinalResponse, AuditResults, CFOAssistant
 from finance_engine import calculate_financial_health
 from cfo_agent import get_ai_cfo_advice
 
 app = FastAPI(title="Edge-Cloud AI Auditor API")
+
+# Allow all origins so the phone browser doesn't block requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/api/v1/audit-and-cfo", response_model=FinalResponse)
 async def process_audit(request: AuditRequest):

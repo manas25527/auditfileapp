@@ -2,6 +2,13 @@
    ClariFi - Interactive Application Engine
    ========================================================================== */
 
+// --- Backend API Configuration ---
+// Change this to your server's IP if accessing from a phone on the same Wi-Fi.
+// Example: 'http://192.168.1.42:8000' (use your laptop's local IP, NOT localhost)
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8000'
+  : `http://${window.location.hostname}:8000`;
+
 document.addEventListener('DOMContentLoaded', () => {
   initNavbarScroll();
   initMobileMenu();
@@ -1255,7 +1262,7 @@ function runNpuTelemetrySimulation() {
     }, stage.delay);
   });
 
-  // Complete after all stages
+  // Complete after all stages — call backend API during "Triton Server" stage
   setTimeout(() => {
     clearInterval(timerInterval);
 
@@ -1270,13 +1277,60 @@ function runNpuTelemetrySimulation() {
     if (progressBar) progressBar.style.width = '100%';
     if (laser) laser.style.display = 'none';
 
-    showToast('⚡ NPU extraction complete! Triton verified. Rendering results...', 'success');
+    // --- Call the FastAPI backend ---
+    const inv = currentInvoice;
+    const requestBody = {
+      device_id: 'iQOO_15_edge',
+      auth_token: 'bearer_edge_demo',
+      request_type: 'audit_and_cfo_analysis',
+      extracted_data: {
+        document_type: inv.docType || 'tax_invoice',
+        vendor_name: inv.vendor,
+        invoice_date: inv.dateRaw || '2026-08-22',
+        line_items_total: inv.subtotalNum,
+        tax_amount: inv.taxNum,
+        gross_total: inv.totalNum
+      }
+    };
 
-    // Populate results & switch to results tab
-    setTimeout(() => {
-      populateResultsScreen();
-      switchMobileTab('mobTabResults');
-    }, 600);
+    fetch(`${API_BASE_URL}/api/v1/audit-and-cfo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    })
+    .then(res => {
+      if (!res.ok) throw new Error(`Server responded ${res.status}`);
+      return res.json();
+    })
+    .then(data => {
+      // Merge real backend data into currentInvoice for display
+      if (data.audit_results) {
+        currentInvoice.riskScore = data.audit_results.risk_score;
+        currentInvoice.riskLevel = data.audit_results.risk_level;
+        currentInvoice.xaiReason = data.audit_results.explainable_ai_reason;
+        currentInvoice.riskTag = data.audit_results.risk_level === 'HIGH' ? '' : 'low';
+        if (data.audit_results.risk_level === 'MEDIUM') currentInvoice.riskTag = 'med';
+      }
+      if (data.cfo_assistant) {
+        currentInvoice.newRunway = data.cfo_assistant.updated_runway_months;
+        currentInvoice.runwayImpact = `This $${inv.totalNum.toLocaleString()} invoice updates cash runway to <strong>${data.cfo_assistant.updated_runway_months} months</strong>.`;
+        if (data.cfo_assistant.action_steps && data.cfo_assistant.action_steps.length >= 3) {
+          currentInvoice.cfoSteps = data.cfo_assistant.action_steps;
+        }
+      }
+      showToast('⚡ NPU extraction + Cloud AI verified! Rendering live results...', 'success');
+    })
+    .catch(err => {
+      console.warn('Backend API unreachable, using preset data:', err.message);
+      showToast('⚡ NPU extraction complete! (Offline mode — using preset data)', 'success');
+    })
+    .finally(() => {
+      // Always populate results and switch tab, whether API succeeded or not
+      setTimeout(() => {
+        populateResultsScreen();
+        switchMobileTab('mobTabResults');
+      }, 600);
+    });
   }, 3800);
 }
 
