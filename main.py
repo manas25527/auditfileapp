@@ -102,8 +102,18 @@ async def upload_document(file: UploadFile = File(...)):
 
     return {
         "status": "success",
-        "extracted_data": extracted,
-        "raw_text_preview": raw_text,
+        "extracted_data": {
+            "document_type": extracted.get("document_type", "Unknown"),
+            "vendor_name": extracted.get("vendor_name", "Unknown"),
+            "invoice_date": extracted.get("invoice_date", ""),
+            "line_items_total": extracted.get("line_items_total", 0),
+            "tax_amount": extracted.get("tax_amount", 0),
+            "gross_total": extracted.get("gross_total", 0),
+        },
+        "raw_text_preview": raw_text[:500] if raw_text else "",
+        "content_summary": extracted.get("content_summary", ""),
+        "pending_refunds": extracted.get("pending_refunds", []),
+        "unpaid_salaries": extracted.get("unpaid_salaries", []),
         "audit_results": {
             "risk_score": risk_score,
             "risk_level": risk_level,

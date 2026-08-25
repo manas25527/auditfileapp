@@ -158,14 +158,217 @@ def parse_invoice_fields(raw_text: str) -> dict:
         "line_items_total": round(subtotal, 2),
         "tax_amount": round(tax_amount, 2),
         "gross_total": round(gross_total, 2),
-        "raw_text": text[:500]  # Send first 500 chars for debugging
+        "raw_text": text  # Return full text for analysis
     }
+
+
+def detect_pending_refunds(raw_text: str) -> list[dict]:
+    """
+    Scan document text for refund/credit entries that have NOT been
+    initiated, processed, or completed. Returns a list of dicts with
+    name, amount, and reason.
+    """
+    refunds = []
+    lines = raw_text.split("\n")
+
+    # Keywords that indicate a refund/credit entry
+    refund_keywords = re.compile(
+        r'(refund|credit\s*note|return|reimbursement|cashback|reversal)',
+        re.IGNORECASE
+    )
+    # Keywords that indicate the refund was already processed
+    completed_keywords = re.compile(
+        r'(initiated|processed|completed|approved|settled|paid|credited|refunded|done|cleared)',
+        re.IGNORECASE
+    )
+
+    amount_pattern = re.compile(r'[\$₹€£]?\s*([\d,]+\.?\d{0,2})')
+
+    for i, line in enumerate(lines):
+        line_clean = line.strip()
+        if not line_clean or len(line_clean) < 5:
+            continue
+
+        if refund_keywords.search(line_clean):
+            # Check if this line or nearby lines indicate completion
+            context = line_clean
+            # Also check the next 2 lines for status
+            for j in range(1, 3):
+                if i + j < len(lines):
+                    context += " " + lines[i + j].strip()
+
+            if not completed_keywords.search(context):
+                # Extract amount from line
+                amt_match = amount_pattern.search(line_clean)
+                amount = 0.0
+                if amt_match:
+                    try:
+                        amount = float(amt_match.group(1).replace(",", ""))
+                    except ValueError:
+                        amount = 0.0
+
+                # Try to extract a name/identifier
+                # Remove the refund keyword and amount to get the name
+                name = refund_keywords.sub("", line_clean).strip()
+                name = amount_pattern.sub("", name).strip()
+                name = re.sub(r'[:\-|•–—,]+', ' ', name).strip()
+                if not name or len(name) < 2:
+                    name = f"Entry on line {i + 1}"
+
+                refunds.append({
+                    "name": name[:80],
+                    "amount": amount,
+                    "status": "NOT INITIATED",
+                    "line_ref": line_clean[:120]
+                })
+
+    return refunds
+
+
+def detect_unpaid_salaries(raw_text: str) -> list[dict]:
+    """
+    Scan document text for salary/payroll entries where payment has
+    NOT been received/credited. Returns a list of dicts with name,
+    amount, and status.
+    """
+    unpaid = []
+    lines = raw_text.split("\n")
+
+    # Keywords indicating salary/payroll entries
+    salary_keywords = re.compile(
+        r'(salary|payroll|wage|compensation|stipend|emolument|pay\b)',
+        re.IGNORECASE
+    )
+    # Keywords indicating payment was made
+    paid_keywords = re.compile(
+        r'(paid|received|credited|transferred|deposited|cleared|settled|processed|done|completed|success)',
+        re.IGNORECASE
+    )
+    # Keywords indicating NOT paid
+    unpaid_keywords = re.compile(
+        r'(pending|unpaid|due|outstanding|not\s*paid|not\s*received|overdue|delayed|hold|withheld|failed)',
+        re.IGNORECASE
+    )
+
+    amount_pattern = re.compile(r'[\$₹€£]?\s*([\d,]+\.?\d{0,2})')
+
+    # Strategy 1: Look for explicit unpaid/pending salary lines
+    for i, line in enumerate(lines):
+        line_clean = line.strip()
+        if not line_clean or len(line_clean) < 5:
+            continue
+
+        # Check if line has salary-related content
+        has_salary = salary_keywords.search(line_clean)
+
+        # Also check for table rows with names and amounts where status is pending
+        context = line_clean
+        for j in range(1, 3):
+            if i + j < len(lines):
+                context += " " + lines[i + j].strip()
+
+        if has_salary or unpaid_keywords.search(line_clean):
+            # If it has salary keyword + unpaid indicator, or just unpaid + amount
+            is_unpaid = unpaid_keywords.search(context) or (has_salary and not paid_keywords.search(context))
+
+            if is_unpaid:
+                amt_match = amount_pattern.search(line_clean)
+                amount = 0.0
+                if amt_match:
+                    try:
+                        amount = float(amt_match.group(1).replace(",", ""))
+                    except ValueError:
+                        amount = 0.0
+
+                # Extract name
+                name = salary_keywords.sub("", line_clean).strip()
+                name = unpaid_keywords.sub("", name).strip()
+                name = amount_pattern.sub("", name).strip()
+                name = re.sub(r'[:\-|•–—,]+', ' ', name).strip()
+                if not name or len(name) < 2:
+                    name = f"Entry on line {i + 1}"
+
+                # Determine specific status
+                status = "NOT RECEIVED"
+                if re.search(r'overdue|delayed', context, re.IGNORECASE):
+                    status = "OVERDUE"
+                elif re.search(r'hold|withheld', context, re.IGNORECASE):
+                    status = "ON HOLD"
+                elif re.search(r'failed', context, re.IGNORECASE):
+                    status = "FAILED"
+
+                unpaid.append({
+                    "name": name[:80],
+                    "amount": amount,
+                    "status": status,
+                    "line_ref": line_clean[:120]
+                })
+
+    # Strategy 2: If it's a payroll document, look for table-like rows
+    # with names and amounts but "pending" or no "paid" status
+    text_lower = raw_text.lower()
+    if ("payroll" in text_lower or "salary" in text_lower) and len(unpaid) == 0:
+        # Look for patterns like: "Name    Amount    Status"
+        for i, line in enumerate(lines):
+            line_clean = line.strip()
+            if not line_clean or len(line_clean) < 10:
+                continue
+            # Skip header rows
+            if re.match(r'^(name|employee|sr|s\.no|#|sl)', line_clean, re.IGNORECASE):
+                continue
+
+            # Check if this line has an amount and a pending/unpaid indicator
+            if amount_pattern.search(line_clean) and unpaid_keywords.search(line_clean):
+                amt_match = amount_pattern.search(line_clean)
+                amount = 0.0
+                if amt_match:
+                    try:
+                        amount = float(amt_match.group(1).replace(",", ""))
+                    except ValueError:
+                        amount = 0.0
+
+                name = unpaid_keywords.sub("", line_clean).strip()
+                name = amount_pattern.sub("", name).strip()
+                name = re.sub(r'[:\-|•–—,]+', ' ', name).strip()
+                if not name or len(name) < 2:
+                    name = f"Employee (line {i + 1})"
+
+                unpaid.append({
+                    "name": name[:80],
+                    "amount": amount,
+                    "status": "NOT RECEIVED",
+                    "line_ref": line_clean[:120]
+                })
+
+    return unpaid
+
+
+def generate_content_summary(raw_text: str, doc_type: str) -> str:
+    """Generate a brief human-readable summary of the document content."""
+    lines = [l.strip() for l in raw_text.split("\n") if l.strip()]
+    total_lines = len(lines)
+    char_count = len(raw_text)
+
+    summary_parts = [f"{doc_type} with {total_lines} content lines ({char_count:,} characters)"]
+
+    text_lower = raw_text.lower()
+    if "payroll" in text_lower:
+        summary_parts.append("Contains payroll/salary data")
+    if "refund" in text_lower or "credit note" in text_lower:
+        summary_parts.append("Contains refund/credit entries")
+    if "invoice" in text_lower:
+        summary_parts.append("Contains invoice details")
+    if "tax" in text_lower or "gst" in text_lower:
+        summary_parts.append("Contains tax information")
+
+    return ". ".join(summary_parts) + "."
 
 
 def extract_document_data(file_bytes: bytes, filename: str) -> dict:
     """
-    Main entry point: detect file type, extract text, parse fields.
-    Returns a dict matching the ExtractedData schema.
+    Main entry point: detect file type, extract text, parse fields,
+    and run smart analysis for refunds and salaries.
+    Returns a dict with extracted fields + analysis results.
     """
     ext = filename.lower().rsplit(".", 1)[-1] if "." in filename else ""
 
@@ -188,7 +391,22 @@ def extract_document_data(file_bytes: bytes, filename: str) -> dict:
             "line_items_total": 0.0,
             "tax_amount": 0.0,
             "gross_total": 0.0,
-            "raw_text": "(No text could be extracted)"
+            "raw_text": "(No text could be extracted)",
+            "content_summary": "Document could not be read.",
+            "pending_refunds": [],
+            "unpaid_salaries": []
         }
 
-    return parse_invoice_fields(raw_text)
+    parsed = parse_invoice_fields(raw_text)
+
+    # Run smart analysis
+    pending_refunds = detect_pending_refunds(raw_text)
+    unpaid_salaries = detect_unpaid_salaries(raw_text)
+    content_summary = generate_content_summary(raw_text, parsed["document_type"])
+
+    parsed["content_summary"] = content_summary
+    parsed["pending_refunds"] = pending_refunds
+    parsed["unpaid_salaries"] = unpaid_salaries
+
+    return parsed
+

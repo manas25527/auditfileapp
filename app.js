@@ -3,11 +3,8 @@
    ========================================================================== */
 
 // --- Backend API Configuration ---
-// Change this to your server's IP if accessing from a phone on the same Wi-Fi.
-// Example: 'http://192.168.1.42:8000' (use your laptop's local IP, NOT localhost)
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:8000'
-  : `http://${window.location.hostname}:8000`;
+// Uses the current page origin so it works with localhost, HTTPS, and Cloudflare tunnel
+const API_BASE_URL = window.location.origin;
 
 document.addEventListener('DOMContentLoaded', () => {
   initNavbarScroll();
@@ -1185,11 +1182,15 @@ function handleFileUpload(inputElem) {
 
   showToast(`📤 Uploading ${file.name}... Running OCR extraction on server`, 'info');
 
-  // Update viewfinder to show the uploaded file name
-  const vendorEl = document.getElementById('receiptVendorName');
-  const invNumEl = document.getElementById('receiptInvNum');
-  if (vendorEl) vendorEl.textContent = 'EXTRACTING...';
-  if (invNumEl) invNumEl.textContent = file.name;
+  // --- CLEAR the old receipt preview and show uploaded file indicator ---
+  const sampleReceipt = document.getElementById('sampleReceiptImage');
+  const uploadIndicator = document.getElementById('uploadedFileIndicator');
+  const uploadFileName = document.getElementById('uploadedFileName');
+  const uploadFileStatus = document.getElementById('uploadedFileStatus');
+  if (sampleReceipt) sampleReceipt.style.display = 'none';
+  if (uploadIndicator) uploadIndicator.style.display = 'flex';
+  if (uploadFileName) uploadFileName.textContent = file.name;
+  if (uploadFileStatus) uploadFileStatus.textContent = 'Scanning document...';
 
   // Switch to processing screen immediately
   const procVendor = document.getElementById('processingVendor');
@@ -1236,7 +1237,13 @@ function handleFileUpload(inputElem) {
       dateAnomaly: false,
       runwayImpact: '',
       newRunway: 4.2,
-      cfoSteps: []
+      cfoSteps: [],
+      // Smart analysis data
+      contentSummary: data.content_summary || '',
+      rawTextPreview: data.raw_text_preview || '',
+      pendingRefunds: data.pending_refunds || [],
+      unpaidSalaries: data.unpaid_salaries || [],
+      isUploadedDoc: true
     };
 
     // Set risk tag
@@ -1249,6 +1256,14 @@ function handleFileUpload(inputElem) {
       currentInvoice.jetFlags = ['AMOUNT_DRIFT_200%', 'UPLOADED_DOCUMENT'];
     }
 
+    // Add flags if refunds or salary issues found
+    if (currentInvoice.pendingRefunds.length > 0) {
+      currentInvoice.jetFlags.push('PENDING_REFUNDS');
+    }
+    if (currentInvoice.unpaidSalaries.length > 0) {
+      currentInvoice.jetFlags.push('UNPAID_SALARIES');
+    }
+
     // Set CFO data
     if (data.cfo_assistant) {
       currentInvoice.newRunway = data.cfo_assistant.updated_runway_months;
@@ -1258,19 +1273,8 @@ function handleFileUpload(inputElem) {
       }
     }
 
-    // Update the receipt viewfinder with real data
-    const receiptVendor = document.getElementById('receiptVendorName');
-    const receiptInvNum = document.getElementById('receiptInvNum');
-    const receiptDate = document.getElementById('receiptDate');
-    const receiptLineItem = document.getElementById('receiptLineItem');
-    const receiptTax = document.getElementById('receiptTax');
-    const receiptTotal = document.getElementById('receiptTotal');
-    if (receiptVendor) receiptVendor.textContent = currentInvoice.vendor.toUpperCase();
-    if (receiptInvNum) receiptInvNum.textContent = currentInvoice.invNum;
-    if (receiptDate) receiptDate.textContent = currentInvoice.date;
-    if (receiptLineItem) receiptLineItem.textContent = currentInvoice.lineItem;
-    if (receiptTax) receiptTax.textContent = currentInvoice.tax;
-    if (receiptTotal) receiptTotal.textContent = currentInvoice.total;
+    // Update the uploaded file indicator with success
+    if (uploadFileStatus) uploadFileStatus.textContent = '✅ Scan complete — ' + currentInvoice.vendor;
 
     // Update processing screen labels
     if (procVendor) procVendor.textContent = currentInvoice.vendor.toUpperCase();
@@ -1280,8 +1284,8 @@ function handleFileUpload(inputElem) {
   })
   .catch(err => {
     console.error('Upload failed:', err);
+    if (uploadFileStatus) uploadFileStatus.textContent = '❌ Scan failed';
     showToast(`❌ Upload failed: ${err.message}. Using preset data instead.`, 'warning');
-    // Fall back to current preset
   });
 
   // Reset the input so the same file can be re-selected
@@ -1504,8 +1508,103 @@ function populateResultsScreen() {
   const xaiBody = document.getElementById('xaiContentBody');
   if (xaiBody) xaiBody.style.display = 'none';
 
+  // Smart Analysis (only for uploaded docs)
+  populateSmartAnalysis();
+
   // CFO strategy screen
   populateCfoScreen();
+}
+
+/**
+ * Populate the Smart Analysis section with document content, refunds, and salary data
+ */
+function populateSmartAnalysis() {
+  const inv = currentInvoice;
+  const section = document.getElementById('smartAnalysisSection');
+  const summaryEl = document.getElementById('contentSummaryText');
+  const rawPreviewEl = document.getElementById('rawTextPreview');
+  const refundsCard = document.getElementById('pendingRefundsCard');
+  const refundsList = document.getElementById('pendingRefundsList');
+  const refundBadge = document.getElementById('refundCountBadge');
+  const salariesCard = document.getElementById('unpaidSalariesCard');
+  const salariesList = document.getElementById('unpaidSalariesList');
+  const salaryBadge = document.getElementById('salaryCountBadge');
+  const allClear = document.getElementById('allClearMessage');
+
+  if (!section) return;
+
+  // Only show for uploaded documents
+  if (!inv.isUploadedDoc) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+
+  // Content Summary
+  if (summaryEl) summaryEl.textContent = inv.contentSummary || 'Document scanned successfully.';
+  if (rawPreviewEl) rawPreviewEl.textContent = inv.rawTextPreview || '(No raw text available)';
+
+  // --- Pending Refunds ---
+  const refunds = inv.pendingRefunds || [];
+  if (refunds.length > 0 && refundsCard && refundsList) {
+    refundsCard.style.display = 'block';
+    if (refundBadge) refundBadge.textContent = refunds.length + ' found';
+
+    const fmtAmt = (v) => v > 0 ? `$${v.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—';
+    refundsList.innerHTML = refunds.map(r => `
+      <div class="analysis-item">
+        <div class="analysis-item-icon danger"><i class="fa-solid fa-rotate-left"></i></div>
+        <div class="analysis-item-details">
+          <div class="analysis-item-name">${escapeHtml(r.name)}
+            <span class="analysis-status-pill danger">${escapeHtml(r.status)}</span>
+          </div>
+          <div class="analysis-item-meta">${escapeHtml(r.line_ref || '')}</div>
+        </div>
+        <div class="analysis-item-amount danger">${fmtAmt(r.amount)}</div>
+      </div>
+    `).join('');
+  } else if (refundsCard) {
+    refundsCard.style.display = 'none';
+  }
+
+  // --- Unpaid Salaries ---
+  const salaries = inv.unpaidSalaries || [];
+  if (salaries.length > 0 && salariesCard && salariesList) {
+    salariesCard.style.display = 'block';
+    if (salaryBadge) salaryBadge.textContent = salaries.length + ' found';
+
+    const fmtAmt = (v) => v > 0 ? `$${v.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—';
+    salariesList.innerHTML = salaries.map(s => `
+      <div class="analysis-item">
+        <div class="analysis-item-icon warning"><i class="fa-solid fa-user-clock"></i></div>
+        <div class="analysis-item-details">
+          <div class="analysis-item-name">${escapeHtml(s.name)}
+            <span class="analysis-status-pill warning">${escapeHtml(s.status)}</span>
+          </div>
+          <div class="analysis-item-meta">${escapeHtml(s.line_ref || '')}</div>
+        </div>
+        <div class="analysis-item-amount warning">${fmtAmt(s.amount)}</div>
+      </div>
+    `).join('');
+  } else if (salariesCard) {
+    salariesCard.style.display = 'none';
+  }
+
+  // All clear message
+  if (allClear) {
+    allClear.style.display = (refunds.length === 0 && salaries.length === 0) ? 'block' : 'none';
+  }
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 /**
