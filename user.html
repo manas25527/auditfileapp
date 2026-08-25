@@ -250,13 +250,25 @@
                   </div>
                 </div>
 
+                <!-- Hidden file inputs for real capture/upload -->
+                <input type="file" id="cameraFileInput" accept="image/*" capture="environment" style="display:none;" onchange="handleFileUpload(this)">
+                <input type="file" id="galleryFileInput" accept="image/*,.pdf,application/pdf" style="display:none;" onchange="handleFileUpload(this)">
+
                 <!-- Controls -->
                 <div class="hud-controls-bar">
                   <button class="hud-tool-btn" title="Flash"><i class="fa-solid fa-bolt"></i></button>
-                  <button class="hud-shutter-btn" id="triggerEdgeScan" onclick="startEdgeProcessingFlow()">
+                  <button class="hud-shutter-btn" id="triggerEdgeScan" onclick="document.getElementById('cameraFileInput').click()">
                     <div class="hud-shutter-inner"></div>
                   </button>
-                  <button class="hud-tool-btn" title="Gallery"><i class="fa-solid fa-images"></i></button>
+                  <button class="hud-tool-btn" title="Gallery" onclick="document.getElementById('galleryFileInput').click()"><i class="fa-solid fa-images"></i></button>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:8px; padding:0 10px;">
+                  <button class="btn btn-sm btn-primary-gradient" style="flex:1; font-size:0.72rem;" onclick="document.getElementById('galleryFileInput').click()">
+                    <i class="fa-solid fa-file-pdf"></i> Upload PDF / Photo
+                  </button>
+                  <button class="btn btn-sm btn-outline" style="flex:1; font-size:0.72rem;" onclick="startEdgeProcessingFlow()">
+                    <i class="fa-solid fa-flask"></i> Use Preset Demo
+                  </button>
                 </div>
               </div>
 

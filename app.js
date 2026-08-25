@@ -1176,6 +1176,119 @@ function loadPresetInvoice(presetKey) {
 }
 
 /**
+ * Handle real file upload from camera capture or gallery/PDF picker.
+ * Sends the file to the backend, receives extracted data, and starts the flow.
+ */
+function handleFileUpload(inputElem) {
+  const file = inputElem.files && inputElem.files[0];
+  if (!file) return;
+
+  showToast(`📤 Uploading ${file.name}... Running OCR extraction on server`, 'info');
+
+  // Update viewfinder to show the uploaded file name
+  const vendorEl = document.getElementById('receiptVendorName');
+  const invNumEl = document.getElementById('receiptInvNum');
+  if (vendorEl) vendorEl.textContent = 'EXTRACTING...';
+  if (invNumEl) invNumEl.textContent = file.name;
+
+  // Switch to processing screen immediately
+  const procVendor = document.getElementById('processingVendor');
+  const procTotal = document.getElementById('processingTotal');
+  if (procVendor) procVendor.textContent = 'ANALYZING DOCUMENT...';
+  if (procTotal) procTotal.textContent = file.name;
+  switchMobileTab('mobTabProcessing');
+  runNpuTelemetrySimulation();
+
+  // Upload file to backend
+  const formData = new FormData();
+  formData.append('file', file);
+
+  fetch(`${API_BASE_URL}/api/v1/upload-document`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(res => {
+    if (!res.ok) throw new Error(`Server responded ${res.status}`);
+    return res.json();
+  })
+  .then(data => {
+    const ext = data.extracted_data || {};
+    const fmt = (v) => typeof v === 'number' ? `$${v.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '$0.00';
+
+    // Build a dynamic currentInvoice from the backend response
+    currentInvoice = {
+      vendor: ext.vendor_name || 'Unknown Vendor',
+      invNum: 'UPLOADED-DOC',
+      date: ext.invoice_date || new Date().toISOString().slice(0,10),
+      dateRaw: ext.invoice_date || new Date().toISOString().slice(0,10),
+      lineItem: fmt(ext.line_items_total),
+      tax: fmt(ext.tax_amount),
+      total: fmt(ext.gross_total),
+      totalNum: ext.gross_total || 0,
+      subtotalNum: ext.line_items_total || 0,
+      taxNum: ext.tax_amount || 0,
+      docType: ext.document_type || 'Tax Invoice',
+      riskScore: data.audit_results ? data.audit_results.risk_score : 15,
+      riskLevel: data.audit_results ? data.audit_results.risk_level : 'LOW',
+      riskTag: '',
+      xaiReason: data.audit_results ? data.audit_results.explainable_ai_reason : 'No anomalies detected.',
+      jetFlags: [],
+      dateAnomaly: false,
+      runwayImpact: '',
+      newRunway: 4.2,
+      cfoSteps: []
+    };
+
+    // Set risk tag
+    if (currentInvoice.riskLevel === 'HIGH') currentInvoice.riskTag = '';
+    else if (currentInvoice.riskLevel === 'MEDIUM') currentInvoice.riskTag = 'med';
+    else currentInvoice.riskTag = 'low';
+
+    // Set JET flags for high risk
+    if (currentInvoice.riskScore >= 70) {
+      currentInvoice.jetFlags = ['AMOUNT_DRIFT_200%', 'UPLOADED_DOCUMENT'];
+    }
+
+    // Set CFO data
+    if (data.cfo_assistant) {
+      currentInvoice.newRunway = data.cfo_assistant.updated_runway_months;
+      currentInvoice.runwayImpact = `This ${currentInvoice.total} invoice updates cash runway to <strong>${data.cfo_assistant.updated_runway_months} months</strong>.`;
+      if (data.cfo_assistant.action_steps && data.cfo_assistant.action_steps.length >= 3) {
+        currentInvoice.cfoSteps = data.cfo_assistant.action_steps;
+      }
+    }
+
+    // Update the receipt viewfinder with real data
+    const receiptVendor = document.getElementById('receiptVendorName');
+    const receiptInvNum = document.getElementById('receiptInvNum');
+    const receiptDate = document.getElementById('receiptDate');
+    const receiptLineItem = document.getElementById('receiptLineItem');
+    const receiptTax = document.getElementById('receiptTax');
+    const receiptTotal = document.getElementById('receiptTotal');
+    if (receiptVendor) receiptVendor.textContent = currentInvoice.vendor.toUpperCase();
+    if (receiptInvNum) receiptInvNum.textContent = currentInvoice.invNum;
+    if (receiptDate) receiptDate.textContent = currentInvoice.date;
+    if (receiptLineItem) receiptLineItem.textContent = currentInvoice.lineItem;
+    if (receiptTax) receiptTax.textContent = currentInvoice.tax;
+    if (receiptTotal) receiptTotal.textContent = currentInvoice.total;
+
+    // Update processing screen labels
+    if (procVendor) procVendor.textContent = currentInvoice.vendor.toUpperCase();
+    if (procTotal) procTotal.textContent = currentInvoice.total;
+
+    showToast(`✅ Extracted: ${currentInvoice.vendor} — ${currentInvoice.total}`, 'success');
+  })
+  .catch(err => {
+    console.error('Upload failed:', err);
+    showToast(`❌ Upload failed: ${err.message}. Using preset data instead.`, 'warning');
+    // Fall back to current preset
+  });
+
+  // Reset the input so the same file can be re-selected
+  inputElem.value = '';
+}
+
+/**
  * Start the full Edge Processing flow:
  * Camera capture → NPU Processing → Verification → CFO Handoff
  */

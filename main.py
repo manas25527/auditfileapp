@@ -1,10 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from schemas import AuditRequest, FinalResponse, AuditResults, CFOAssistant
 from finance_engine import calculate_financial_health
 from cfo_agent import get_ai_cfo_advice
+from document_extractor import extract_document_data
 import os
 
 app = FastAPI(title="Edge-Cloud AI Auditor API")
@@ -71,6 +72,49 @@ async def process_audit(request: AuditRequest):
             action_steps=action_steps
         )
     )
+
+@app.post("/api/v1/upload-document")
+async def upload_document(file: UploadFile = File(...)):
+    """Accept a PDF or image, extract invoice data, run audit + CFO analysis."""
+    file_bytes = await file.read()
+    filename = file.filename or "upload.jpg"
+
+    # 1. Extract structured data from the document
+    extracted = extract_document_data(file_bytes, filename)
+    raw_text = extracted.pop("raw_text", "")
+
+    # 2. Run financial health check
+    runway, burn, is_anomaly = calculate_financial_health(
+        invoice_amount=extracted["gross_total"],
+        vendor=extracted["vendor_name"]
+    )
+
+    # 3. Determine risk
+    risk_score = 90 if is_anomaly else 15
+    risk_level = "HIGH" if is_anomaly else "LOW"
+    xai_reason = (
+        f"Invoice total (${extracted['gross_total']}) is more than 200% of historical average for {extracted['vendor_name']}."
+        if is_anomaly else "Invoice matches historical parameters."
+    )
+
+    # 4. Get CFO advice
+    action_steps = get_ai_cfo_advice(runway, is_anomaly, extracted["vendor_name"])
+
+    return {
+        "status": "success",
+        "extracted_data": extracted,
+        "raw_text_preview": raw_text,
+        "audit_results": {
+            "risk_score": risk_score,
+            "risk_level": risk_level,
+            "explainable_ai_reason": xai_reason
+        },
+        "cfo_assistant": {
+            "updated_runway_months": runway,
+            "updated_cash_burn": burn,
+            "action_steps": action_steps
+        }
+    }
 
 # Mount static files last so it doesn't shadow API routes
 app.mount("/", StaticFiles(directory=os.path.dirname(__file__) or "."), name="static")
