@@ -2,10 +2,10 @@ fastapi
 uvicorn
 pydantic
 pandas
+python-multipart
+pdfplumber
+pytesseract
+pillow
 torch
 transformers
 accelerate
-pdfplumber
-pytesseract
-Pillow
-python-multipart
