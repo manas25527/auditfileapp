@@ -43,7 +43,7 @@ def calculate_financial_health(invoice_amount: float, vendor: str, date_str: str
     if date_str:
         import datetime
         try:
-            dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+            dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")  # noqa: DTZ007
             if dt.weekday() >= 5: # Saturday or Sunday
                 risk_score += 30
                 day_name = "Saturday" if dt.weekday() == 5 else "Sunday"
@@ -82,6 +82,34 @@ def record_transaction_in_ledger(invoice_amount: float, vendor: str, date_str: s
     
     # Save the updated CSV
     df.to_csv("historical_ledger.csv", index=False)
+
+def create_file_ledger(filename: str, extracted: dict) -> str:
+    """
+    Creates a specific ledger CSV for the uploaded file containing all extracted entries.
+    """
+    import os
+    import pandas as pd
+    
+    entries = extracted.get("all_entries", [])
+    
+    # Base ledger filename
+    base_name = os.path.splitext(filename)[0]
+    ledger_filename = f"ledger_{base_name}.csv"
+    
+    if entries:
+        df = pd.DataFrame(entries)
+    else:
+        # If no entries, create a single entry ledger with the gross total
+        single_entry = {
+            "name": extracted.get("vendor_name", "Unknown"),
+            "amount": extracted.get("gross_total", 0.0),
+            "status": "PENDING",
+            "line_num": 1
+        }
+        df = pd.DataFrame([single_entry])
+        
+    df.to_csv(ledger_filename, index=False)
+    return ledger_filename
     
 def get_global_stats():
     """

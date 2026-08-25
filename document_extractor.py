@@ -11,13 +11,22 @@ from datetime import datetime
 
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:
-    """Extract all text from a PDF file."""
+    """Extract all text from a PDF file. Uses OCR as fallback for scanned PDFs."""
     text = ""
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
         for page in pdf.pages:
             page_text = page.extract_text()
-            if page_text:
+            if page_text and len(page_text.strip()) > 20:
                 text += page_text + "\n"
+            else:
+                # Fallback to OCR for scanned images inside PDF
+                try:
+                    img = page.to_image(resolution=300).original
+                    if img.mode != "RGB":
+                        img = img.convert("RGB")
+                    text += pytesseract.image_to_string(img) + "\n"
+                except Exception:
+                    pass
     return text
 
 

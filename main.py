@@ -110,6 +110,10 @@ async def upload_document(file: UploadFile = File(...)):
             date_str=extracted.get("invoice_date") or today_str
         )
 
+        # 3.5 Create a specific ledger for this file
+        from finance_engine import create_file_ledger
+        ledger_file_created = create_file_ledger(filename, extracted)
+
         # 4. Get CFO advice & draft email
         action_steps = get_ai_cfo_advice(runway, risk_score > 30, extracted.get("vendor_name", "Unknown"))
         draft_email = generate_draft_email(extracted.get("vendor_name", "Unknown"), extracted.get("gross_total", 0), risk_level, xai_reason)
@@ -141,7 +145,8 @@ async def upload_document(file: UploadFile = File(...)):
                 "updated_cash_burn": burn,
                 "action_steps": action_steps,
                 "draft_email": draft_email
-            }
+            },
+            "ledger_file": ledger_file_created
         }
     except Exception as e:
         logger.error(f"Upload processing failed: {e}\n{traceback.format_exc()}")
