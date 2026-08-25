@@ -132,12 +132,12 @@
             <div class="cfo-metrics-row">
               <div class="cfo-metric-card">
                 <div class="card-lbl"><i class="fa-solid fa-fire text-amber"></i> Burn Rate</div>
-                <div class="card-val">$120,000</div>
+                <div class="card-val" id="globalBurnValue">$120,000</div>
                 <div class="card-meta neg"><i class="fa-solid fa-arrow-up"></i> +8% vs last month</div>
               </div>
               <div class="cfo-metric-card">
                 <div class="card-lbl"><i class="fa-solid fa-file-invoice-dollar text-cyan"></i> Liabilities</div>
-                <div class="card-val">$65,400</div>
+                <div class="card-val" id="globalLiabilitiesValue">$65,400</div>
                 <div class="card-meta warn"><i class="fa-solid fa-clock"></i> Payroll in 6 days</div>
               </div>
             </div>
@@ -191,7 +191,7 @@
               <span class="font-mono text-cyan text-xs">Today</span>
             </div>
 
-            <div class="mobile-tx-list">
+            <div class="mobile-tx-list" id="userTxList">
               <div class="mobile-tx-item">
                 <div class="tx-ico"><i class="fa-brands fa-stripe"></i></div>
                 <div class="tx-details">
@@ -516,7 +516,7 @@
               <!-- Action Buttons -->
               <div class="cfo-action-buttons-grid">
                 <button class="btn-cfo-action primary" onclick="openNet60EmailModal()">
-                  <i class="fa-solid fa-envelope"></i> Draft Net-60 Email to Vendor
+                  <i class="fa-solid fa-envelope"></i> Draft Clarification Email to Vendor
                 </button>
                 <button class="btn-cfo-action danger" onclick="flagHighRiskToBoard()">
                   <i class="fa-solid fa-flag"></i> Flag as High Risk to Board
@@ -671,15 +671,15 @@
     </div>
   </div>
 
-  <!-- ===== MODAL: NET-60 EMAIL DRAFT ===== -->
+  <!-- ===== MODAL: CLARIFICATION EMAIL DRAFT ===== -->
   <div class="modal-overlay" id="net60EmailModal">
     <div class="modal-card glass-card" style="max-width: 500px;">
       <div class="modal-header">
         <div class="modal-title">
           <i class="fa-solid fa-envelope text-cyan"></i>
           <div>
-            <h3>Draft Net-60 Email</h3>
-            <span class="sub">Auto-generated vendor payment term renegotiation</span>
+            <h3>Draft Clarification Email</h3>
+            <span class="sub">Auto-generated vendor inquiry</span>
           </div>
         </div>
         <button class="modal-close" onclick="closeNet60EmailModal()">&times;</button>
@@ -691,15 +691,15 @@
         </div>
         <div style="margin-bottom: 12px;">
           <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 4px;">Subject:</label>
-          <div style="font-family: var(--font-mono); font-size: 0.82rem; color: #fff; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">Payment Terms Amendment Request — INV-2026-4421 (Net-60)</div>
+          <div style="font-family: var(--font-mono); font-size: 0.82rem; color: #fff; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">Clarification Request — INV-2026-4421</div>
         </div>
         <div style="margin-bottom: 12px;">
           <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 4px;">Body:</label>
-          <div style="font-size: 0.78rem; color: var(--text-secondary); background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; border: 1px solid var(--border-subtle); line-height: 1.5; max-height: 220px; overflow-y: auto;">
+          <div id="dynamicDraftEmailBody" style="font-size: 0.78rem; color: var(--text-secondary); background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; border: 1px solid var(--border-subtle); line-height: 1.5; max-height: 220px; overflow-y: auto;">
             Dear Accounts Payable Team,<br><br>
-            We are writing to request an amendment to the payment terms on Invoice <strong>INV-2026-4421</strong> (Amount: <strong>$50,000.00</strong>) from Net-30 to <strong>Net-60</strong>.<br><br>
-            This adjustment will allow us to better align our cash flow obligations during Q3 2026. The revised payment schedule would move the due date from <strong>September 21, 2026</strong> to <strong>October 21, 2026</strong>.<br><br>
-            We value our partnership with Acme Software Corp and are committed to prompt settlement under the revised terms.<br><br>
+            We received Invoice <strong>INV-2026-4421</strong> (Amount: <strong>$50,000.00</strong>). Our automated auditing system flagged a few items for review before we can process payment.<br><br>
+            Specifically, we noticed the invoice was posted on a weekend, and the total amount differs significantly from our historical average. Could you please review and confirm the details of this charge?<br><br>
+            We appreciate your prompt assistance to help us resolve this quickly.<br><br>
             Warm regards,<br>
             <strong>Aditya Siwach, CA</strong><br>
             ClariFi Edge Finance Team<br>

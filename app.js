@@ -6,6 +6,10 @@
 // Uses the current page origin so it works with localhost, HTTPS, and Cloudflare tunnel
 const API_BASE_URL = window.location.origin;
 
+// Flag to prevent the NPU simulation from making its own API call
+// when a real file upload is already in progress
+let _uploadInProgress = false;
+
 document.addEventListener('DOMContentLoaded', () => {
   initNavbarScroll();
   initMobileMenu();
@@ -15,7 +19,103 @@ document.addEventListener('DOMContentLoaded', () => {
   initModals();
   initSandboxSimulator();
   initDemoForm();
+  
+  // Fetch initial stats
+  fetchAndRenderGlobalStats();
 });
+
+function fetchAndRenderGlobalStats() {
+  fetch(`${API_BASE_URL}/api/v1/ledger-stats`)
+    .then(res => res.json())
+    .then(data => {
+      // Update User Dashboard Runway Gauge
+      const runwayVal = document.getElementById('gaugeMonthsVal');
+      if (runwayVal) runwayVal.textContent = data.runway_months;
+      
+      const gaugeArc = document.getElementById('gaugeValueArc');
+      if (gaugeArc) {
+        // Max runway is considered 12 months for the full circle (offset = 0)
+        // Empty circle (offset = 283)
+        let runwayRatio = Math.min(data.runway_months / 12, 1);
+        let offset = 283 - (283 * runwayRatio);
+        gaugeArc.style.strokeDashoffset = offset;
+      }
+      
+      const burnVal = document.getElementById('globalBurnValue');
+      if (burnVal) burnVal.textContent = '$' + data.monthly_burn.toLocaleString();
+      
+      const liabVal = document.getElementById('globalLiabilitiesValue');
+      if (liabVal) {
+        liabVal.textContent = '$' + data.pending_liabilities.toLocaleString();
+        const meta = liabVal.nextElementSibling;
+        if (meta) {
+          if (data.pending_liabilities === 0) {
+            meta.className = 'card-meta success';
+            meta.innerHTML = '<i class="fa-solid fa-circle-check text-emerald"></i> All cleared';
+            meta.style.color = '#10B981';
+          } else {
+            meta.className = 'card-meta warn';
+            meta.innerHTML = '<i class="fa-solid fa-clock"></i> Payroll in 6 days';
+            meta.style.color = '';
+          }
+        }
+      }
+      
+      // Update User Dashboard Transactions list
+      const userTxList = document.getElementById('userTxList');
+      if (userTxList) {
+        userTxList.innerHTML = '';
+        data.transactions.forEach(tx => {
+          const isPos = tx.amount > 0;
+          const txHtml = `
+            <div class="mobile-tx-item">
+              <div class="tx-ico"><i class="fa-solid fa-file-invoice"></i></div>
+              <div class="tx-details">
+                <span class="tx-title">${tx.description}</span>
+                <span class="tx-sub">Auto-synced from Scan</span>
+              </div>
+              <div class="tx-amount ${isPos ? 'negative' : 'positive'} font-mono">
+                ${isPos ? '-' : '+'}$${Math.abs(tx.amount).toLocaleString()}
+              </div>
+            </div>
+          `;
+          userTxList.innerHTML += txHtml;
+        });
+      }
+      
+      // Update Admin transactions list if it exists
+      const tableBody = document.getElementById('ledgerTableBody');
+      if (tableBody) {
+        tableBody.innerHTML = ''; // Clear old rows
+        data.transactions.forEach(tx => {
+          const row = document.createElement('tr');
+          const isPos = tx.amount > 0;
+          row.innerHTML = `
+            <td><span class="tag-status ${isPos ? 'warning' : 'success'}"><i class="fa-solid fa-check"></i> Recorded</span></td>
+            <td>
+              <div class="tx-id">TX-${Math.floor(Math.random()*10000)}</div>
+              <div class="tx-hash">${tx.date}</div>
+            </td>
+            <td>
+              <div class="tx-vendor"><i class="fa-solid fa-file-invoice"></i> ${tx.description}</div>
+              <div class="tx-meta">Auto-synced from Scan</div>
+            </td>
+            <td><span class="gl-code">2010-00</span> Accounts Payable</td>
+            <td class="amount ${isPos ? 'negative' : 'positive'}">${isPos ? '-' : '+'}$${Math.abs(tx.amount).toLocaleString()}</td>
+            <td>
+              <div class="match-score">
+                <div class="score-bar"><div class="fill" style="width: 100%;"></div></div>
+                <span>100%</span>
+              </div>
+            </td>
+            <td><button class="btn-audit-inspect"><i class="fa-solid fa-file-shield"></i> Verify</button></td>
+          `;
+          tableBody.appendChild(row);
+        });
+      }
+    })
+    .catch(err => console.error("Failed to fetch ledger stats", err));
+}
 
 /* ==========================================================================
    Navigation Bar & Mobile Menu
@@ -1198,6 +1298,7 @@ function handleFileUpload(inputElem) {
   if (procVendor) procVendor.textContent = 'ANALYZING DOCUMENT...';
   if (procTotal) procTotal.textContent = file.name;
   switchMobileTab('mobTabProcessing');
+  _uploadInProgress = true;  // Tell NPU simulation to skip its own API call
   runNpuTelemetrySimulation();
 
   // Upload file to backend
@@ -1238,6 +1339,7 @@ function handleFileUpload(inputElem) {
       runwayImpact: '',
       newRunway: 4.2,
       cfoSteps: [],
+      draftEmail: data.cfo_assistant ? data.cfo_assistant.draft_email : '',
       // Smart analysis data
       contentSummary: data.content_summary || '',
       rawTextPreview: data.raw_text_preview || '',
@@ -1281,11 +1383,24 @@ function handleFileUpload(inputElem) {
     if (procTotal) procTotal.textContent = currentInvoice.total;
 
     showToast(`✅ Extracted: ${currentInvoice.vendor} — ${currentInvoice.total}`, 'success');
+
+    // Populate results with the REAL uploaded data
+    populateResultsScreen();
+    switchMobileTab('mobTabResults');
+    
+    // Sync the entire portal with the new ledger changes
+    fetchAndRenderGlobalStats();
   })
   .catch(err => {
     console.error('Upload failed:', err);
     if (uploadFileStatus) uploadFileStatus.textContent = '❌ Scan failed';
     showToast(`❌ Upload failed: ${err.message}. Using preset data instead.`, 'warning');
+    // Fall back: populate with whatever preset was loaded
+    populateResultsScreen();
+    switchMobileTab('mobTabResults');
+  })
+  .finally(() => {
+    _uploadInProgress = false;
   });
 
   // Reset the input so the same file can be re-selected
@@ -1379,7 +1494,7 @@ function runNpuTelemetrySimulation() {
     }, stage.delay);
   });
 
-  // Complete after all stages — call backend API during "Triton Server" stage
+  // Complete after all stages
   setTimeout(() => {
     clearInterval(timerInterval);
 
@@ -1394,7 +1509,14 @@ function runNpuTelemetrySimulation() {
     if (progressBar) progressBar.style.width = '100%';
     if (laser) laser.style.display = 'none';
 
-    // --- Call the FastAPI backend ---
+    // If a real file upload is in progress, DON'T make another API call.
+    // The upload handler (handleFileUpload) will populate results when it gets the response.
+    if (_uploadInProgress) {
+      showToast('⏳ Waiting for document analysis from server...', 'info');
+      return;
+    }
+
+    // --- Only for PRESET demo mode: call the FastAPI backend ---
     const inv = currentInvoice;
     const requestBody = {
       device_id: 'iQOO_15_edge',
@@ -1434,6 +1556,7 @@ function runNpuTelemetrySimulation() {
         if (data.cfo_assistant.action_steps && data.cfo_assistant.action_steps.length >= 3) {
           currentInvoice.cfoSteps = data.cfo_assistant.action_steps;
         }
+        currentInvoice.draftEmail = data.cfo_assistant.draft_email;
       }
       showToast('⚡ NPU extraction + Cloud AI verified! Rendering live results...', 'success');
     })
@@ -1446,6 +1569,7 @@ function runNpuTelemetrySimulation() {
       setTimeout(() => {
         populateResultsScreen();
         switchMobileTab('mobTabResults');
+        fetchAndRenderGlobalStats();
       }, 600);
     });
   }, 3800);
@@ -1648,7 +1772,13 @@ function toggleXaiAccordion() {
  */
 function openNet60EmailModal() {
   const modal = document.getElementById('net60EmailModal');
-  if (modal) modal.classList.add('active');
+  if (modal) {
+    const draftBody = document.getElementById('dynamicDraftEmailBody');
+    if (draftBody && currentInvoice && currentInvoice.draftEmail) {
+      draftBody.innerHTML = currentInvoice.draftEmail;
+    }
+    modal.classList.add('active');
+  }
 }
 
 function closeNet60EmailModal() {
@@ -1658,7 +1788,7 @@ function closeNet60EmailModal() {
 
 function sendNet60Email() {
   closeNet60EmailModal();
-  showToast('📧 Net-60 payment terms email sent to accounts@acmesoftware.com!', 'success');
+  showToast('📧 Clarification email sent to vendor!', 'success');
 }
 
 /**

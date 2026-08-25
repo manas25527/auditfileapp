@@ -27,6 +27,17 @@ def extract_text_from_image(file_bytes: bytes) -> str:
     # Convert to RGB if needed (e.g. RGBA PNGs)
     if image.mode != "RGB":
         image = image.convert("RGB")
+    
+    # Downscale high-resolution phone photos to avoid OCR timeouts (Error 524)
+    # A max dimension of 1600px is usually enough for OCR readability while being much faster
+    max_dim = 1600
+    if image.width > max_dim or image.height > max_dim:
+        ratio = min(max_dim / image.width, max_dim / image.height)
+        new_size = (int(image.width * ratio), int(image.height * ratio))
+        # Use ANTIALIAS for Pillow < 10 or Resampling.LANCZOS for newer versions
+        resample_method = getattr(Image, 'Resampling', Image).LANCZOS
+        image = image.resize(new_size, resample_method)
+        
     text = pytesseract.image_to_string(image)
     return text
 
@@ -119,7 +130,7 @@ def parse_invoice_fields(raw_text: str) -> dict:
 
     # Look for tax
     tax_patterns = [
-        r'(?:tax|gst|vat|cgst|sgst|igst|hst|sales\s*tax)[:\s]*[\$₹€£]?\s*([\d,]+\.?\d{0,2})',
+        r'(?:tax|gst|vat|cgst|sgst|igst|hst|sales\s*tax)\s*(?:\([^)]*\))?\s*[:\s]*[\$₹€£]?\s*([\d,]+\.?\d{0,2})',
     ]
     for pattern in tax_patterns:
         match = re.search(pattern, text, re.IGNORECASE)

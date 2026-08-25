@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from schemas import AuditRequest, FinalResponse, AuditResults, CFOAssistant
-from finance_engine import calculate_financial_health
-from cfo_agent import get_ai_cfo_advice
+from finance_engine import calculate_financial_health, record_transaction_in_ledger, get_global_stats
+from cfo_agent import get_ai_cfo_advice, generate_draft_email
 from document_extractor import extract_document_data
 import os
 
@@ -41,24 +41,27 @@ app.add_middleware(
 async def process_audit(request: AuditRequest):
     data = request.extracted_data
     
-    # 1. Run the Math
-    runway, burn, is_anomaly = calculate_financial_health(
+    # 1. Run the Math & Robust Scoring
+    runway, burn, risk_score, risk_level, xai_reason = calculate_financial_health(
         invoice_amount=data.gross_total, 
-        vendor=data.vendor_name
+        vendor=data.vendor_name,
+        date_str=data.invoice_date
     )
     
-    # 2. Determine Risk Logic
-    risk_score = 90 if is_anomaly else 15
-    risk_level = "HIGH" if is_anomaly else "LOW"
-    xai_reason = (
-        f"Invoice total (${data.gross_total}) is more than 200% of historical average for {data.vendor_name}."
-        if is_anomaly else "Invoice matches historical parameters."
+    # 3. Record transaction in ledger
+    import datetime
+    today_str = datetime.date.today().strftime("%Y-%m-%d")
+    record_transaction_in_ledger(
+        invoice_amount=data.gross_total,
+        vendor=data.vendor_name,
+        date_str=data.invoice_date or today_str
     )
     
-    # 3. Get AI CFO Advice
-    action_steps = get_ai_cfo_advice(runway, is_anomaly, data.vendor_name)
+    # 4. Get AI CFO Advice & Draft Email
+    action_steps = get_ai_cfo_advice(runway, risk_score > 30, data.vendor_name)
+    draft_email = generate_draft_email(data.vendor_name, data.gross_total, risk_level, xai_reason)
     
-    # 4. Return formatted response to the Android app
+    # 5. Return formatted response to the Android app
     return FinalResponse(
         status="success",
         audit_results=AuditResults(
@@ -69,7 +72,8 @@ async def process_audit(request: AuditRequest):
         cfo_assistant=CFOAssistant(
             updated_runway_months=runway,
             updated_cash_burn=burn,
-            action_steps=action_steps
+            action_steps=action_steps,
+            draft_email=draft_email
         )
     )
 
@@ -83,22 +87,25 @@ async def upload_document(file: UploadFile = File(...)):
     extracted = extract_document_data(file_bytes, filename)
     raw_text = extracted.pop("raw_text", "")
 
-    # 2. Run financial health check
-    runway, burn, is_anomaly = calculate_financial_health(
+    # 2. Run financial health check & scoring
+    runway, burn, risk_score, risk_level, xai_reason = calculate_financial_health(
         invoice_amount=extracted["gross_total"],
-        vendor=extracted["vendor_name"]
+        vendor=extracted["vendor_name"],
+        date_str=extracted.get("invoice_date")
     )
 
-    # 3. Determine risk
-    risk_score = 90 if is_anomaly else 15
-    risk_level = "HIGH" if is_anomaly else "LOW"
-    xai_reason = (
-        f"Invoice total (${extracted['gross_total']}) is more than 200% of historical average for {extracted['vendor_name']}."
-        if is_anomaly else "Invoice matches historical parameters."
+    # 4. Record transaction in ledger
+    import datetime
+    today_str = datetime.date.today().strftime("%Y-%m-%d")
+    record_transaction_in_ledger(
+        invoice_amount=extracted.get("gross_total", 0),
+        vendor=extracted.get("vendor_name", "Unknown"),
+        date_str=extracted.get("invoice_date") or today_str
     )
 
-    # 4. Get CFO advice
-    action_steps = get_ai_cfo_advice(runway, is_anomaly, extracted["vendor_name"])
+    # 5. Get CFO advice & draft email
+    action_steps = get_ai_cfo_advice(runway, risk_score > 30, extracted["vendor_name"])
+    draft_email = generate_draft_email(extracted["vendor_name"], extracted["gross_total"], risk_level, xai_reason)
 
     return {
         "status": "success",
@@ -122,9 +129,15 @@ async def upload_document(file: UploadFile = File(...)):
         "cfo_assistant": {
             "updated_runway_months": runway,
             "updated_cash_burn": burn,
-            "action_steps": action_steps
+            "action_steps": action_steps,
+            "draft_email": draft_email
         }
     }
+
+@app.get("/api/v1/ledger-stats")
+async def get_ledger_stats():
+    """Returns real-time aggregated stats from the CSV ledger."""
+    return get_global_stats()
 
 # Mount static files last so it doesn't shadow API routes
 app.mount("/", StaticFiles(directory=os.path.dirname(__file__) or "."), name="static")

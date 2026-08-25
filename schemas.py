@@ -26,6 +26,7 @@ class CFOAssistant(BaseModel):
     updated_runway_months: float
     updated_cash_burn: float
     action_steps: List[str]
+    draft_email: str
 
 class FinalResponse(BaseModel):
     status: str

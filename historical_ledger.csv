@@ -1,5 +1,47 @@
 account_type,amount,date,description
-cash_reserves,450000.00,2026-08-01,Operating Bank Account
-monthly_burn,120000.00,2026-08-01,Average monthly expenses
-pending_liabilities,80000.00,2026-08-25,Upcoming Payroll & AP
-historical_vendor_avg_Acme,22000.00,2026-01-01,Average Acme Software invoice
+cash_reserves,450000.0,2026-08-01,Operating Bank Account
+monthly_burn,120000.0,2026-08-01,Average monthly expenses
+pending_liabilities,80000.0,2026-08-25,Upcoming Payroll & AP
+historical_vendor_avg_Acme,22000.0,2026-01-01,Average Acme Software invoice
+pending_liabilities,45.0,2026-08-25,Scanned Invoice - 5:45 (8 - © MA @D
+pending_liabilities,45.0,2026-08-25,Scanned Invoice - 5:45 (8 - © MA @D
+pending_liabilities,45.0,2026-08-25,Scanned Invoice - 5:45 (8 - © MA @D
+pending_liabilities,45.0,2026-08-25,Scanned Invoice - 5:45 (8 - © MA @D
+pending_liabilities,110.0,2026-08-25,Scanned Invoice - Test Vendor
+pending_liabilities,45.0,2026-08-25,Scanned Invoice - 5:45 (8 - © MA @D
+pending_liabilities,45.0,2026-08-25,Scanned Invoice - 5:45 (8 - © MA @D
+pending_liabilities,45.0,2026-08-25,Scanned Invoice - 5:45 (8 - © MA @D
+pending_liabilities,45.0,2026-08-25,Scanned Invoice - 5:45 (8 - © MA @D
+pending_liabilities,45.0,2026-08-25,Scanned Invoice - 5:45 (8 - © MA @D
+pending_liabilities,0.0,2026-08-25,Scanned Invoice - Unreadable Document
+pending_liabilities,0.0,2026-08-25,Scanned Invoice - Unreadable Document
+pending_liabilities,45.0,2026-08-25,Scanned Invoice - 5:45 (8 - © MA @D
+pending_liabilities,45.0,2026-08-25,Scanned Invoice - 5:45 (8 - © MA @D
+pending_liabilities,0.0,2026-08-25,Scanned Invoice - Unreadable Document
+pending_liabilities,0.0,2026-08-25,Scanned Invoice - Unreadable Document
+pending_liabilities,0.0,2026-08-25,Scanned Invoice - Unreadable Document
+pending_liabilities,0.0,2026-08-25,Scanned Invoice - Unreadable Document
+pending_liabilities,2028.0,2026-08-25,Scanned Invoice - CREAN Nance
+pending_liabilities,2028.0,2026-08-25,Scanned Invoice - CREAN Nance
+pending_liabilities,2028.0,2026-08-25,Scanned Invoice - CREAN Nance
+pending_liabilities,2028.0,2026-08-25,Scanned Invoice - CREAN Nance
+pending_liabilities,0.0,2026-08-25,Scanned Invoice - Unreadable Document
+pending_liabilities,0.0,2026-08-25,Scanned Invoice - Unreadable Document
+pending_liabilities,0.0,2026-08-25,Scanned Invoice - Unreadable Document
+pending_liabilities,0.0,2026-08-25,Scanned Invoice - Unreadable Document
+pending_liabilities,299000.0,2020-06-02,Scanned Invoice - HACKATHON CORP.
+pending_liabilities,299000.0,2020-06-02,Scanned Invoice - HACKATHON CORP.
+pending_liabilities,299000.0,2020-06-02,Scanned Invoice - HACKATHON CORP.
+pending_liabilities,299000.0,2020-06-02,Scanned Invoice - HACKATHON CORP.
+pending_liabilities,299000.0,2020-06-02,Scanned Invoice - HACKATHON CORP.
+pending_liabilities,299000.0,2020-06-02,Scanned Invoice - HACKATHON CORP.
+pending_liabilities,45.0,2026-08-25,Scanned Invoice - 5:45 (8 - © MA @D
+pending_liabilities,45.0,2026-08-25,Scanned Invoice - 5:45 (8 - © MA @D
+pending_liabilities,0.0,2026-08-25,Scanned Invoice - Unreadable Document
+pending_liabilities,0.0,2026-08-25,Scanned Invoice - Unreadable Document
+pending_liabilities,2028.0,2026-08-25,Scanned Invoice - CREAN Nance
+pending_liabilities,2028.0,2026-08-25,Scanned Invoice - CREAN Nance
+pending_liabilities,299000.0,2020-06-02,Scanned Invoice - HACKATHON CORP.
+pending_liabilities,299000.0,2020-06-02,Scanned Invoice - HACKATHON CORP.
+pending_liabilities,299000.0,2020-06-02,Scanned Invoice - HACKATHON CORP.
+pending_liabilities,299000.0,2020-06-02,Scanned Invoice - HACKATHON CORP.
