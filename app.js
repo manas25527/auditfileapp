@@ -1180,17 +1180,17 @@ function handleFileUpload(inputElem) {
   const file = inputElem.files && inputElem.files[0];
   if (!file) return;
 
-  showToast(`📤 Uploading ${file.name}... Running OCR extraction on server`, 'info');
+  showToast(`📤 Uploading ${file.name}... Running AI analysis`, 'info');
 
-  // --- CLEAR the old receipt preview and show uploaded file indicator ---
-  const sampleReceipt = document.getElementById('sampleReceiptImage');
-  const uploadIndicator = document.getElementById('uploadedFileIndicator');
+  // --- Update the upload zone to show file info ---
+  const uploadPrompt = document.getElementById('uploadPrompt');
+  const uploadFileInfo = document.getElementById('uploadFileInfo');
   const uploadFileName = document.getElementById('uploadedFileName');
   const uploadFileStatus = document.getElementById('uploadedFileStatus');
-  if (sampleReceipt) sampleReceipt.style.display = 'none';
-  if (uploadIndicator) uploadIndicator.style.display = 'flex';
+  if (uploadPrompt) uploadPrompt.style.display = 'none';
+  if (uploadFileInfo) uploadFileInfo.style.display = 'flex';
   if (uploadFileName) uploadFileName.textContent = file.name;
-  if (uploadFileStatus) uploadFileStatus.textContent = 'Scanning document...';
+  if (uploadFileStatus) uploadFileStatus.textContent = '⏳ Scanning document...';
 
   // Switch to processing screen immediately
   const procVendor = document.getElementById('processingVendor');
@@ -1213,6 +1213,10 @@ function handleFileUpload(inputElem) {
     return res.json();
   })
   .then(data => {
+    if (data.status === 'error') {
+      throw new Error(data.detail || 'Server returned an error');
+    }
+
     const ext = data.extracted_data || {};
     const fmt = (v) => typeof v === 'number' ? `$${v.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '$0.00';
 
@@ -1243,6 +1247,7 @@ function handleFileUpload(inputElem) {
       rawTextPreview: data.raw_text_preview || '',
       pendingRefunds: data.pending_refunds || [],
       unpaidSalaries: data.unpaid_salaries || [],
+      allEntries: data.all_entries || [],
       isUploadedDoc: true
     };
 
@@ -1281,11 +1286,15 @@ function handleFileUpload(inputElem) {
     if (procTotal) procTotal.textContent = currentInvoice.total;
 
     showToast(`✅ Extracted: ${currentInvoice.vendor} — ${currentInvoice.total}`, 'success');
+
+    // --- DIRECTLY populate results and switch to results tab ---
+    populateResultsScreen();
+    switchMobileTab('mobTabResults');
   })
   .catch(err => {
     console.error('Upload failed:', err);
     if (uploadFileStatus) uploadFileStatus.textContent = '❌ Scan failed';
-    showToast(`❌ Upload failed: ${err.message}. Using preset data instead.`, 'warning');
+    showToast(`❌ Upload failed: ${err.message}. Check server connection and try again.`, 'warning');
   });
 
   // Reset the input so the same file can be re-selected
@@ -1394,7 +1403,18 @@ function runNpuTelemetrySimulation() {
     if (progressBar) progressBar.style.width = '100%';
     if (laser) laser.style.display = 'none';
 
-    // --- Call the FastAPI backend ---
+    // --- Skip the audit API call if this was an uploaded document ---
+    // The upload endpoint already ran analysis; don't overwrite with preset data
+    if (currentInvoice.isUploadedDoc) {
+      // Already populated by handleFileUpload, just switch to results
+      setTimeout(() => {
+        populateResultsScreen();
+        switchMobileTab('mobTabResults');
+      }, 600);
+      return;
+    }
+
+    // --- Call the FastAPI backend (preset demo flow only) ---
     const inv = currentInvoice;
     const requestBody = {
       device_id: 'iQOO_15_edge',
@@ -1523,6 +1543,10 @@ function populateSmartAnalysis() {
   const section = document.getElementById('smartAnalysisSection');
   const summaryEl = document.getElementById('contentSummaryText');
   const rawPreviewEl = document.getElementById('rawTextPreview');
+  const entriesCard = document.getElementById('allEntriesCard');
+  const entriesBody = document.getElementById('allEntriesBody');
+  const entriesBadge = document.getElementById('entriesCountBadge');
+  const tableStatsBar = document.getElementById('tableStatsBar');
   const refundsCard = document.getElementById('pendingRefundsCard');
   const refundsList = document.getElementById('pendingRefundsList');
   const refundBadge = document.getElementById('refundCountBadge');
@@ -1545,13 +1569,60 @@ function populateSmartAnalysis() {
   if (summaryEl) summaryEl.textContent = inv.contentSummary || 'Document scanned successfully.';
   if (rawPreviewEl) rawPreviewEl.textContent = inv.rawTextPreview || '(No raw text available)';
 
+  // --- Full Data Table ---
+  const entries = inv.allEntries || [];
+  if (entries.length > 0 && entriesCard && entriesBody) {
+    entriesCard.style.display = 'block';
+    if (entriesBadge) entriesBadge.textContent = entries.length + ' entries';
+
+    const fmtAmt = (v) => v > 0 ? `₹${v.toLocaleString('en-IN')}` : '—';
+
+    const statusClass = (s) => {
+      const sl = s.toLowerCase();
+      if (sl === 'paid' || sl === 'received' || sl === 'credited') return 'paid';
+      if (sl === 'pending' || sl === 'not received') return 'pending';
+      if (sl === 'overdue' || sl === 'delayed') return 'overdue';
+      if (sl === 'failed') return 'failed';
+      if (sl === 'on hold') return 'hold';
+      return 'unknown';
+    };
+
+    entriesBody.innerHTML = entries.map((e, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${escapeHtml(e.name)}</td>
+        <td>${fmtAmt(e.amount)}</td>
+        <td><span class="status-pill ${statusClass(e.status)}">${escapeHtml(e.status)}</span></td>
+      </tr>
+    `).join('');
+
+    // Table stats
+    if (tableStatsBar) {
+      const paid = entries.filter(e => e.status === 'PAID').length;
+      const pending = entries.filter(e => ['PENDING', 'NOT RECEIVED'].includes(e.status)).length;
+      const overdue = entries.filter(e => ['OVERDUE', 'FAILED'].includes(e.status)).length;
+      const other = entries.length - paid - pending - overdue;
+      const totalAmt = entries.reduce((s, e) => s + (e.amount || 0), 0);
+
+      tableStatsBar.innerHTML = `
+        <span class="table-stat"><span class="table-stat-dot paid"></span> ${paid} Paid</span>
+        <span class="table-stat"><span class="table-stat-dot pending"></span> ${pending} Pending</span>
+        <span class="table-stat"><span class="table-stat-dot overdue"></span> ${overdue} Overdue</span>
+        ${other > 0 ? `<span class="table-stat">${other} Other</span>` : ''}
+        <span class="table-stat" style="margin-left:auto; font-weight:600; color:var(--text-primary);">Total: ₹${totalAmt.toLocaleString('en-IN')}</span>
+      `;
+    }
+  } else if (entriesCard) {
+    entriesCard.style.display = 'none';
+  }
+
   // --- Pending Refunds ---
   const refunds = inv.pendingRefunds || [];
   if (refunds.length > 0 && refundsCard && refundsList) {
     refundsCard.style.display = 'block';
     if (refundBadge) refundBadge.textContent = refunds.length + ' found';
 
-    const fmtAmt = (v) => v > 0 ? `$${v.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—';
+    const fmtAmt = (v) => v > 0 ? `₹${v.toLocaleString('en-IN')}` : '—';
     refundsList.innerHTML = refunds.map(r => `
       <div class="analysis-item">
         <div class="analysis-item-icon danger"><i class="fa-solid fa-rotate-left"></i></div>
@@ -1574,7 +1645,7 @@ function populateSmartAnalysis() {
     salariesCard.style.display = 'block';
     if (salaryBadge) salaryBadge.textContent = salaries.length + ' found';
 
-    const fmtAmt = (v) => v > 0 ? `$${v.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—';
+    const fmtAmt = (v) => v > 0 ? `₹${v.toLocaleString('en-IN')}` : '—';
     salariesList.innerHTML = salaries.map(s => `
       <div class="analysis-item">
         <div class="analysis-item-icon warning"><i class="fa-solid fa-user-clock"></i></div>
@@ -1593,7 +1664,7 @@ function populateSmartAnalysis() {
 
   // All clear message
   if (allClear) {
-    allClear.style.display = (refunds.length === 0 && salaries.length === 0) ? 'block' : 'none';
+    allClear.style.display = (refunds.length === 0 && salaries.length === 0 && entries.length === 0) ? 'block' : 'none';
   }
 }
 

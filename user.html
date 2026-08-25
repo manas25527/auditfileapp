@@ -221,64 +221,63 @@
             </div>
           </div>
 
-          <!-- ===== SCREEN 2: MULTI-MODAL INGESTION & AI SCANNER ===== -->
+          <!-- ===== SCREEN 2: DOCUMENT UPLOAD & ANALYSIS ===== -->
           <div class="mobile-tab-view" id="mobTabScan">
             <div class="camera-scanner-view">
               <div class="scan-header-card">
-                <h5><i class="fa-solid fa-microchip text-cyan"></i> Edge AI Document Scanner</h5>
-                <p>Capture any invoice, receipt, or bill. ExecuTorch INT8 extracts data on-device via Snapdragon NPU &mdash; no cloud needed.</p>
+                <h5><i class="fa-solid fa-microchip text-cyan"></i> AI Document Analyzer</h5>
+                <p>Upload a PDF, CSV or photo. Our AI extracts data into tables, detects unpaid salaries &amp; pending refunds, and checks bills for anomalies.</p>
               </div>
 
-              <!-- Camera Viewfinder with HUD -->
-              <div class="camera-hud-box" id="cameraHudBox">
-                <div class="hud-corner tl"></div>
-                <div class="hud-corner tr"></div>
-                <div class="hud-corner bl"></div>
-                <div class="hud-corner br"></div>
-                <div class="hud-guide-text">Align document within frame</div>
-
-                <!-- Simulated Receipt in Viewfinder -->
-                <div class="sample-receipt-image" id="sampleReceiptImage">
-                  <div class="receipt-paper">
-                    <div class="rec-title" id="receiptVendorName">ACME SOFTWARE CORP</div>
-                    <div class="rec-row"><span>Invoice #:</span> <span id="receiptInvNum">INV-2026-4421</span></div>
-                    <div class="rec-row"><span>Date:</span> <span id="receiptDate">Aug 22, 2026</span></div>
-                    <div class="rec-row"><span>Software License:</span> <span id="receiptLineItem">$45,000.00</span></div>
-                    <div class="rec-row"><span>GST (18%):</span> <span id="receiptTax">$5,000.00</span></div>
-                    <div class="rec-divider"></div>
-                    <div class="rec-row bold"><span>TOTAL:</span> <span id="receiptTotal">$50,000.00</span></div>
+              <!-- Upload Area -->
+              <div class="upload-zone" id="uploadZone">
+                <!-- Default state: upload prompt -->
+                <div class="upload-prompt" id="uploadPrompt">
+                  <div class="upload-icon-large">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
                   </div>
+                  <div class="upload-prompt-text">Tap to upload a document</div>
+                  <div class="upload-prompt-sub">PDF, CSV, JPG, PNG — max 10MB</div>
                 </div>
 
-                <!-- Uploaded File Indicator (hidden by default) -->
-                <div class="uploaded-file-indicator" id="uploadedFileIndicator" style="display:none;">
-                  <div class="upload-icon-wrap">
+                <!-- Uploaded state: file info (hidden by default) -->
+                <div class="upload-file-info" id="uploadFileInfo" style="display:none;">
+                  <div class="upload-file-icon">
                     <i class="fa-solid fa-file-circle-check"></i>
                   </div>
-                  <div class="upload-file-name" id="uploadedFileName">document.pdf</div>
-                  <div class="upload-file-status" id="uploadedFileStatus">Scanning document...</div>
+                  <div class="upload-file-details">
+                    <div class="upload-file-name" id="uploadedFileName">document.pdf</div>
+                    <div class="upload-file-status" id="uploadedFileStatus">Scanning document...</div>
+                  </div>
                 </div>
 
-                <!-- Hidden file inputs for real capture/upload -->
-                <input type="file" id="cameraFileInput" accept="image/*" capture="environment" style="display:none;" onchange="handleFileUpload(this)">
-                <input type="file" id="galleryFileInput" accept="image/*,.pdf,application/pdf" style="display:none;" onchange="handleFileUpload(this)">
+                <!-- Hidden file inputs -->
+                <input type="file" id="pdfFileInput" accept=".pdf,.csv,.xlsx,application/pdf,text/csv" style="display:none;" onchange="handleFileUpload(this)">
+                <input type="file" id="billPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleFileUpload(this)">
+                <input type="file" id="galleryFileInput" accept="image/*,.pdf,application/pdf,.csv,text/csv" style="display:none;" onchange="handleFileUpload(this)">
+              </div>
 
-                <!-- Controls -->
-                <div class="hud-controls-bar">
-                  <button class="hud-tool-btn" title="Flash"><i class="fa-solid fa-bolt"></i></button>
-                  <button class="hud-shutter-btn" id="triggerEdgeScan" onclick="document.getElementById('cameraFileInput').click()">
-                    <div class="hud-shutter-inner"></div>
-                  </button>
-                  <button class="hud-tool-btn" title="Gallery" onclick="document.getElementById('galleryFileInput').click()"><i class="fa-solid fa-images"></i></button>
-                </div>
-                <div style="display:flex; gap:8px; margin-top:8px; padding:0 10px;">
-                  <button class="btn btn-sm btn-primary-gradient" style="flex:1; font-size:0.72rem;" onclick="document.getElementById('galleryFileInput').click()">
-                    <i class="fa-solid fa-file-pdf"></i> Upload PDF / Photo
-                  </button>
-                  <button class="btn btn-sm btn-outline" style="flex:1; font-size:0.72rem;" onclick="startEdgeProcessingFlow()">
-                    <i class="fa-solid fa-flask"></i> Use Preset Demo
-                  </button>
-                </div>
+              <!-- Upload Action Buttons -->
+              <div class="upload-actions-grid">
+                <button class="upload-action-btn primary" onclick="document.getElementById('pdfFileInput').click()">
+                  <i class="fa-solid fa-file-pdf"></i>
+                  <span class="upload-action-label">Upload PDF / CSV</span>
+                  <span class="upload-action-desc">Payroll, ledger, reports</span>
+                </button>
+                <button class="upload-action-btn secondary" onclick="document.getElementById('billPhotoInput').click()">
+                  <i class="fa-solid fa-camera"></i>
+                  <span class="upload-action-label">Scan Bill / Receipt</span>
+                  <span class="upload-action-desc">Check overcharges & fakes</span>
+                </button>
+              </div>
+
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <button class="btn btn-sm btn-outline" style="flex:1; font-size:0.72rem;" onclick="document.getElementById('galleryFileInput').click()">
+                  <i class="fa-solid fa-images"></i> Pick from Gallery
+                </button>
+                <button class="btn btn-sm btn-outline" style="flex:1; font-size:0.72rem;" onclick="startEdgeProcessingFlow()">
+                  <i class="fa-solid fa-flask"></i> Use Preset Demo
+                </button>
               </div>
 
               <!-- Quick Preset Invoices -->
@@ -435,22 +434,43 @@
               <!-- ===== SMART ANALYSIS SECTION ===== -->
               <div id="smartAnalysisSection" style="display:none;">
 
-                <!-- Document Content Summary -->
+                <!-- AI Summary -->
                 <div class="extracted-data-card" style="margin-top:12px;">
                   <div class="gauge-header" style="margin-bottom: 0;">
-                    <span><i class="fa-solid fa-file-lines text-cyan"></i> Document Content</span>
-                    <span class="badge-status-pass" style="font-size: 0.68rem;"><i class="fa-solid fa-robot"></i> AI Scanned</span>
+                    <span><i class="fa-solid fa-robot text-cyan"></i> AI Analysis Summary</span>
+                    <span class="badge-status-pass" style="font-size: 0.68rem;"><i class="fa-solid fa-check"></i> Scanned</span>
                   </div>
                   <div style="padding:10px 12px; font-size:0.78rem; color: var(--text-secondary); line-height:1.5;" id="contentSummaryText">
                     No summary available.
                   </div>
-                  <div style="padding:0 12px 10px; max-height:120px; overflow-y:auto;">
-                    <pre style="font-size:0.65rem; color: var(--text-muted); white-space:pre-wrap; word-break:break-word; font-family: var(--font-mono); background: rgba(0,0,0,0.2); padding:8px; border-radius:6px; margin:0;" id="rawTextPreview"></pre>
-                  </div>
                 </div>
 
-                <!-- Pending Refunds -->
-                <div class="extracted-data-card" id="pendingRefundsCard" style="margin-top:12px; display:none;">
+                <!-- Full Data Table -->
+                <div class="extracted-data-card" id="allEntriesCard" style="margin-top:12px; display:none;">
+                  <div class="gauge-header" style="margin-bottom: 0;">
+                    <span><i class="fa-solid fa-table text-cyan"></i> Document Data Table</span>
+                    <span class="badge-status-pass" style="font-size: 0.68rem;" id="entriesCountBadge">0 entries</span>
+                  </div>
+                  <div style="padding:0 0 4px; overflow-x:auto;">
+                    <table class="entries-data-table" id="allEntriesTable">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Name / Entry</th>
+                          <th>Amount</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody id="allEntriesBody">
+                      </tbody>
+                    </table>
+                  </div>
+                  <!-- Table stats -->
+                  <div class="table-stats-bar" id="tableStatsBar"></div>
+                </div>
+
+                <!-- Pending Refunds Alert -->
+                <div class="extracted-data-card issue-alert-card" id="pendingRefundsCard" style="margin-top:12px; display:none;">
                   <div class="gauge-header" style="margin-bottom: 0;">
                     <span><i class="fa-solid fa-rotate-left" style="color:#EF4444;"></i> Pending Refunds</span>
                     <span class="risk-level-tag" style="font-size:0.65rem; padding:2px 8px;" id="refundCountBadge">0 found</span>
@@ -458,8 +478,8 @@
                   <div id="pendingRefundsList" style="padding:8px 12px;"></div>
                 </div>
 
-                <!-- Unpaid Salaries -->
-                <div class="extracted-data-card" id="unpaidSalariesCard" style="margin-top:12px; display:none;">
+                <!-- Unpaid Salaries Alert -->
+                <div class="extracted-data-card issue-alert-card" id="unpaidSalariesCard" style="margin-top:12px; display:none;">
                   <div class="gauge-header" style="margin-bottom: 0;">
                     <span><i class="fa-solid fa-user-clock" style="color:#F59E0B;"></i> Unpaid Salaries</span>
                     <span class="risk-level-tag med" style="font-size:0.65rem; padding:2px 8px;" id="salaryCountBadge">0 found</span>
@@ -473,6 +493,14 @@
                   <div style="color:#10B981; font-weight:600; font-size:0.85rem;">All Clear</div>
                   <div style="color: var(--text-secondary); font-size:0.72rem; margin-top:4px;">No pending refunds or unpaid salaries detected in this document.</div>
                 </div>
+
+                <!-- Raw Text (collapsible) -->
+                <details style="margin-top:12px;">
+                  <summary style="font-size:0.72rem; color: var(--text-muted); cursor:pointer; padding:8px 0;"><i class="fa-solid fa-code"></i> View Raw Extracted Text</summary>
+                  <div style="max-height:150px; overflow-y:auto; margin-top:4px;">
+                    <pre style="font-size:0.62rem; color: var(--text-muted); white-space:pre-wrap; word-break:break-word; font-family: var(--font-mono); background: rgba(0,0,0,0.3); padding:10px; border-radius:8px; margin:0;" id="rawTextPreview"></pre>
+                  </div>
+                </details>
               </div>
 
               <!-- Proceed to CFO Strategy Button -->
